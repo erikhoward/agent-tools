@@ -2,6 +2,25 @@
 
 A curated set of opencode [agents](agents/), [commands](commands/), [skills](skills/), and a global [AGENTS.md](AGENTS.md) — the flow workflow (ideate → plan → implement), git helpers, and language/clean-code skills.
 
+![CI](https://github.com/erikhoward/agent-tools/actions/workflows/validate.yml/badge.svg)
+
+## Prerequisites
+
+- **opencode** installed and configured
+- **bash** 3.2+ (macOS default) or 4.0+ (Linux)
+- **git** (for cloning and version control)
+- **curl** (for the one-line install) — or use `--source` to clone manually
+
+## What's Included
+
+**13 agents**, **6 commands**, **10 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
+
+| Type | Count | Purpose |
+|---|---|---|
+| Agents | 13 | Orchestrators, consultants, analysts, coders |
+| Commands | 6 | `/flow-ideate`, `/flow-plan`, `/flow-implement`, `/git-commit`, `/git-push`, `/git-commit-push` |
+| Skills | 10 | Language conventions (go, rust), workflow guides (solid, flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
+
 ## Install (global)
 
 Makes everything available in every opencode project by symlinking into `~/.config/opencode/`.
@@ -18,6 +37,30 @@ git clone https://github.com/erikhoward/agent-tools.git && cd agent-tools
 ```
 
 Then **restart opencode** so the new config loads.
+
+### Security-Conscious Install
+
+If you prefer not to pipe curl output directly to bash, clone and verify first:
+
+```bash
+git clone https://github.com/erikhoward/agent-tools.git ~/.local/share/agent-tools
+# Review the install script before running it
+less ~/.local/share/agent-tools/install.sh
+bash ~/.local/share/agent-tools/install.sh --source ~/.local/share/agent-tools
+```
+
+## Local Development
+
+```bash
+# Set up pre-commit hooks
+git config core.hooksPath .githooks
+
+# Run the validator
+python3 scripts/validate.py
+
+# Run install.sh tests (requires bats-core)
+bats test/
+```
 
 ### What it does
 
@@ -65,3 +108,6 @@ Community marketplaces (e.g. `opencode-marketplace`) namespace files on install 
 
 - **Global AGENTS.md precedence**: a project's own `AGENTS.md` takes precedence over the global one. So this install provides a global *default* for projects without their own `AGENTS.md`; it does not override project-level rules. If you want these guidelines always applied, add the global file to `instructions` in your `~/.config/opencode/opencode.json`.
 - opencode loads config at startup. After any change to agents/commands/skills/AGENTS.md, **restart opencode** for it to take effect.
+```
+
+
