@@ -1,6 +1,8 @@
 ---
 name: git-commit
 description: Use when writing or formatting git commit messages — Conventional Commits 1.0.0, semantic/typed commits, breaking-change markers, footers, and SemVer mapping. Triggers on "write a conventional commit", "format a commit message", "semantic commit", "commit changes", "git commit".
+license: MIT
+compatibility: opencode
 ---
 
 # Conventional Git Commit

@@ -1,6 +1,8 @@
 ---
 name: golangci-lint
 description: This skill should be used when the user asks to "set up golangci-lint", "add linting to a Go project", "configure golangci-lint", "fix golangci-lint errors", or needs guidance on Go code quality and linting best practices.
+license: MIT
+compatibility: opencode
 ---
 
 # golangci-lint

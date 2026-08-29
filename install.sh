@@ -19,7 +19,9 @@
 #   --dry-run          Show what would happen without making changes
 #   -h, --help         Show this help
 
-set -u
+set -uo pipefail
+# Note: we use per-command `|| die` instead of `set -e` so we can provide
+# custom error messages with context. pipefail catches silent pipe failures.
 
 REPO_URL="https://github.com/erikhoward/agent-tools.git"
 CLONE_DIR="${HOME}/.local/share/agent-tools"
@@ -42,8 +44,8 @@ usage() {
 # --- args ---
 while [ $# -gt 0 ]; do
   case "$1" in
-    --source)    SOURCE_DIR="${2:-}"; shift 2 ;;
-    --clone-dir) CLONE_DIR="${2:-}"; shift 2 ;;
+    --source)    SOURCE_DIR="${2:-}"; shift 2; [ -n "$SOURCE_DIR" ] || die "--source requires a path argument" ;;
+    --clone-dir) CLONE_DIR="${2:-}"; shift 2; [ -n "$CLONE_DIR" ] || die "--clone-dir requires a path argument" ;;
     --force)     FORCE=1; shift ;;
     --uninstall) UNINSTALL=1; shift ;;
     --update)    UPDATE=1; shift ;;
@@ -78,6 +80,23 @@ do_ln()    { if [ "$DRY_RUN" -eq 1 ]; then printf '  link: %s -> %s\n' "$2" "$1"
 do_git()   { if [ "$DRY_RUN" -eq 1 ]; then printf '  git %s\n' "$*"; else git "$@" || die "git $1 failed"; fi; }
 
 resolve_source() {
+  if [ "$UNINSTALL" -eq 1 ]; then
+    # Uninstall mode: if SOURCE_DIR is set via --source, validate it;
+    # otherwise fall back to scanning target for symlinks
+    if [ -n "$SOURCE_DIR" ]; then
+      SOURCE_DIR="$(abs_path "$SOURCE_DIR")" || die "--source not found: $SOURCE_DIR"
+      if [ ! -d "$SOURCE_DIR" ]; then
+        printf 'Source (missing): %s — will scan target for symlinks\n' "$SOURCE_DIR"
+        return 0
+      fi
+      [ -d "$SOURCE_DIR/.git" ] || die "clone not found at $SOURCE_DIR. Pass --source <path> to target your checkout."
+    else
+      SOURCE_DIR="$CLONE_DIR"
+      printf 'Source (missing): %s — will scan target for symlinks\n' "$SOURCE_DIR"
+      return 0
+    fi
+    return
+  fi
   if [ -n "$SOURCE_DIR" ]; then
     SOURCE_DIR="$(abs_path "$SOURCE_DIR")" || die "--source not found: $SOURCE_DIR"
     is_repo "$SOURCE_DIR" || die "--source is not an agent-tools checkout: $SOURCE_DIR"
@@ -88,11 +107,15 @@ resolve_source() {
     printf 'Source (current dir): %s\n' "$SOURCE_DIR"; return
   fi
   SOURCE_DIR="$CLONE_DIR"
-  if [ "$UNINSTALL" -eq 1 ] || [ "$UPDATE" -eq 1 ]; then
+  if [ "$UPDATE" -eq 1 ]; then
     [ -d "$SOURCE_DIR/.git" ] || die "clone not found at $SOURCE_DIR. Pass --source <path> to target your checkout."
   elif [ ! -d "$SOURCE_DIR/.git" ]; then
     printf 'Cloning %s -> %s\n' "$REPO_URL" "$SOURCE_DIR"
     do_git clone --depth 1 "$REPO_URL" "$SOURCE_DIR"
+    if [ "$DRY_RUN" -eq 1 ]; then
+      printf '  (dry-run: clone skipped, cannot verify checkout)\n'
+      return 0
+    fi
   fi
   is_repo "$SOURCE_DIR" || die "not a valid agent-tools checkout: $SOURCE_DIR"
   printf 'Source (cloned): %s\n' "$SOURCE_DIR"
@@ -146,6 +169,35 @@ install_all() {
 }
 
 uninstall_all() {
+  # Fallback: if source dir is missing, scan target for our symlinks
+  if [ ! -d "$SOURCE_DIR" ]; then
+    local dst name dst_rm
+    for f in "$OC_DIR"/agents/*.md; do
+      [ -e "$f" ] || [ -L "$f" ] || continue
+      dst="$f"
+      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
+        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
+      fi
+    done
+    for f in "$OC_DIR"/commands/*.md; do
+      [ -e "$f" ] || [ -L "$f" ] || continue
+      dst="$f"
+      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
+        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
+      fi
+    done
+    for d in "$OC_DIR"/skills/*/; do
+      [ -e "$d" ] || [ -L "$d" ] || continue
+      dst="$d"
+      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
+        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
+      fi
+    done
+    if [ -L "$OC_DIR/AGENTS.md" ] && readlink "$OC_DIR/AGENTS.md" | grep -q "agent-tools"; then
+      do_rm "$OC_DIR/AGENTS.md"; CNT_LINKED=$((CNT_LINKED + 1))
+    fi
+    return
+  fi
   local f name
   for f in "$SOURCE_DIR"/agents/*.md; do [ -e "$f" ] || continue
     name="$(basename "$f")"; remove_link "$OC_DIR/agents/$name" "$f"; done
@@ -157,8 +209,9 @@ uninstall_all() {
 }
 
 summary() {
+  local label="${1:-linked}"
   printf '\n'
-  printf '  linked:    %s\n' "$CNT_LINKED"
+  printf '  %s:    %s\n' "$label" "$CNT_LINKED"
   printf '  skipped:   %s\n' "$CNT_SKIPPED"
   printf '  warnings:  %s\n' "$CNT_WARNED"
   printf '\nTarget:  %s\n' "$OC_DIR"
@@ -170,7 +223,7 @@ if [ "$UNINSTALL" -eq 1 ]; then
   resolve_source
   printf 'Uninstalling agent-tools symlinks from %s\n' "$OC_DIR"
   uninstall_all
-  summary
+  summary "removed"
   printf '\nRemoved agent-tools symlinks. The clone at %s is left in place.\n' "$SOURCE_DIR"
   exit 0
 fi

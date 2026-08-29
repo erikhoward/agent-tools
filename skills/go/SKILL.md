@@ -412,3 +412,5 @@ items := []*Item{
 - **Generics tutorial**: https://go.dev/doc/tutorial/generics
 - **Code Review Comments**: https://github.com/golang/go/wiki/CodeReviewComments
 - **Go Proverbs**: https://go-proverbs.github.io/
+
+Adapted from the [Google Go Style Guide](https://google.github.io/styleguide/go/) (CC-BY-4.0).

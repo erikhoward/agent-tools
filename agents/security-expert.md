@@ -1,5 +1,6 @@
 ---
 description: Security & Cryptography Specialist - Focus on security audits, threat modeling, cryptography, authentication, authorization, and secure coding practices
+model: opencode/glm-5.2
 mode: subagent
 permission:
   edit: deny

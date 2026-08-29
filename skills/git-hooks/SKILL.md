@@ -1,8 +1,9 @@
 ---
 name: git-hooks
 description: This skill should be used when the user asks to "create git hooks", "set up pre-commit hooks", "configure git hooks", "add commit validation", "implement pre-push hooks", or needs guidance on Git hooks implementation, validation scripts, or hook best practices.
+license: MIT
+compatibility: opencode
 ---
-
 # Git Hooks
 
 Automate code quality, testing, and validation using Git hooks—scripts that run automatically at key points in the Git workflow.
@@ -165,7 +166,7 @@ exit 0
 
 **Naming convention**: Use numbered prefixes (10, 20, 30) to control execution order and allow inserting new hooks between existing ones (e.g., add a hypothetical `15-validate-json.sh` between 10 and 20).
 
-This project uses this pattern. See `.githooks/hooks.d/` for examples.
+See the `examples/modular-pre-commit/hooks.d/` directory in this skill for working examples.
 
 ### Validating Commit Messages
 

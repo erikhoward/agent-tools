@@ -403,11 +403,11 @@ Runs after all refs successfully updated. Perfect for triggering automation.
 
 #### 1. Trigger CI/CD Pipeline
 
-Trigger your CI system with an authenticated HTTP call (e.g., `curl -X POST` to the CI API) when `main` or other branches update. See references/ci-cd-integration.md for full post-receive examples.
+Trigger your CI system with an authenticated HTTP call (e.g., `curl -X POST` to the CI API) when `main` or other branches update. See ./ci-cd-integration.md for full post-receive examples.
 
 #### 2. Send Notifications
 
-Post push details (author, branch, commit message) to Slack or a build dashboard from post-receive. See references/ci-cd-integration.md for notification examples.
+Post push details (author, branch, commit message) to Slack or a build dashboard from post-receive. See ./ci-cd-integration.md for notification examples.
 
 #### 3. Update Issue Tracker
 
@@ -441,7 +441,7 @@ exit 0
 
 #### 4. Deploy on Tags or Branches
 
-Deploy to production when a `v*` tag is pushed, or to per-branch environments over ssh (e.g., staging on `develop`). See references/ci-cd-integration.md for deploy hook examples.
+Deploy to production when a `v*` tag is pushed, or to per-branch environments over ssh (e.g., staging on `develop`). See ./ci-cd-integration.md for deploy hook examples.
 
 ### Best Practices
 
@@ -457,7 +457,7 @@ Deploy to production when a `v*` tag is pushed, or to per-branch environments ov
 } &
 ```
 
-**Error handling**: Don't fail in post-receive — the push already succeeded. Log failures to stderr and continue (see references/ci-cd-integration.md, "Handle failures gracefully").
+**Error handling**: Don't fail in post-receive — the push already succeeded. Log failures to stderr and continue (see ./ci-cd-integration.md, "Handle failures gracefully").
 
 **Security**: Use environment variables for secrets
 ```bash
@@ -523,7 +523,7 @@ chmod +x pre-receive
 
 ### GitHub/GitLab/Bitbucket
 
-**GitHub**: Use webhooks + Actions instead of server hooks — see references/ci-cd-integration.md
+**GitHub**: Use webhooks + Actions instead of server hooks — see ./ci-cd-integration.md
 
 **GitLab**: Server-side hooks in `/opt/gitlab/embedded/service/gitlab-shell/hooks/`
 

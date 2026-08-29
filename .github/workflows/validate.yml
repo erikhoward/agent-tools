@@ -1,0 +1,48 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Python validator
+        run: python3 scripts/validate.py
+
+      - name: Run shellcheck on install.sh and example .sh files
+        uses: ludeeus/action-shellcheck@v2
+        with:
+          severity: style
+          additional_files: install.sh
+          file: skills/git-hooks/examples/*.sh
+
+      - name: Install bats-core
+        run: sudo apt-get install -y bats
+
+      - name: Run bats tests
+        run: bats test/install.bats
+
+  links:
+    name: Check Links
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check external URLs with lychee
+        uses: lycheeverse/lychee-action@v2
+        with:
+          fail: false

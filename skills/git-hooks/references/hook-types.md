@@ -474,7 +474,7 @@ exit 0
 
 Server-side hooks run on the remote repository and cannot be bypassed by clients.
 
-Server-side hooks (pre-receive, update, post-receive, post-update) are documented in depth in references/server-side-hooks.md.
+Server-side hooks (pre-receive, update, post-receive, post-update) are documented in depth in ./server-side-hooks.md.
 
 ## Niche Hooks
 

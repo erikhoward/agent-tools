@@ -1,6 +1,8 @@
 ---
 name: flow-plan
 description: This skill should be used when the user asks to "plan a feature", "run the flow planning workflow", "consult all senior agents on a plan", "create a structured plan with agent consultation", or needs a thorough multi-agent planning phase before building anything.
+license: MIT
+compatibility: opencode
 ---
 
 # Flow — Plan
@@ -30,6 +32,8 @@ return structured findings, trade-offs, and draft decisions.
 | `@explore` | Open-ended codebase exploration, unfamiliar surfaces |
 
 > Call all relevant Tier 1 agents in parallel. They produce blueprints, not decisions.
+
+> **@explore** is a built-in opencode subagent — not a custom agent from this repo.
 
 ### Tier 2 — Principal Consultants (decision makers)
 

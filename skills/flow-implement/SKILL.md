@@ -1,6 +1,8 @@
 ---
 name: flow-implement
 description: This skill should be used when the user asks to "implement a flow plan", "execute the flow workflow", "run parallel agent implementation", "build from an opencode plan", or needs to execute a written plan from .opencode/plans/ using parallel engineering agents with quality gates.
+license: MIT
+compatibility: opencode
 ---
 
 # Flow — Implement

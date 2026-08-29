@@ -1,0 +1,12 @@
+# Model Allowlist
+# This file lists valid model IDs that are allowed in frontmatter `model` fields.
+# If a `model` field is present but not in this list, a warning is emitted.
+# One model ID per line; lines starting with # are comments.
+
+opencode/glm-5
+opencode/glm-5-free
+opencode/glm-5.1
+opencode/glm-5.2
+opencode/claude-opus-5
+opencode/claude-fable-5
+opencode/nemotron-3.5-lightning-free

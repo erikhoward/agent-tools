@@ -1,6 +1,8 @@
 ---
 name: flow-ideate
 description: Use when the user wants to shape a fuzzy idea into a concept (greenfield) or evaluate and improve an existing feature, system, document, or prior concept (refinement) — collaborative ideation via the Ground/Expand → Stress → Crystallize framework, producing a persistent CONCEPT_BRIEF in .opencode/concepts/ that survives across sessions. Triggers include "ideate", "let's think through this together", "help me shape this idea", "evaluate/improve this", "pick up the <name> concept".
+license: MIT
+compatibility: opencode
 ---
 
 # Flow — Ideate

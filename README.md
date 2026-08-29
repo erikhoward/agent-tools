@@ -28,6 +28,7 @@ Makes everything available in every opencode project by symlinking into `~/.conf
 ```sh
 curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/main/install.sh | bash
 ```
+> **Security tip:** The one-liner above fetches from `main`. For production use, pin to a specific release tag (e.g., replace `/main/` with `/v1.0.0/`) or use the `--source` alternative below to review the code before running.
 
 Or, from a clone:
 

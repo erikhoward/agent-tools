@@ -1,5 +1,5 @@
 ---
-description: Execute implementation plan with specialized engineering agents
+description: Execute an implementation plan with parallel engineering agents, quality gates, and mandatory testing
 agent: build
 ---
 

@@ -61,11 +61,29 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 | `solution-architect` | Tier 2 — concrete service designs, cross-component interfaces |
 | `database-architect` | Tier 2 — data modelling, schema, migrations |
 | `security-expert` | Tier 2 — threat modelling, auth, secure coding |
-| `code-analyst`, `performance-engineer`, `devops-engineer`, `test-engineer`, `ui-ux-designer` | Tier 1 analysts / specialists — blueprints, not decisions |
+| `code-analyst`, `performance-engineer`, `ui-ux-designer` | Tier 1 analysts — read-only, blueprints |
+| `devops-engineer`, `test-engineer` | Tier 1 analysts during planning; implementers during execution |
+| `@explore` | Built-in opencode subagent — not a custom agent from this repo |
 
 `build` and `plan` are the workflow orchestrators. Tier 2 consultants operate
 **Think → Advise → Review**; Tier 1 analysts produce blueprints in parallel.
 See `flow-plan` for the full tier model.
+
+## Model Strategy
+
+Agents without an explicit `model:` field inherit the session default / invoker's model. This is intentional — Tier 1 analysts benefit from context-adaptive model inheritance.
+
+Tier 2 consultants have explicit models to ensure a reasoning step above the orchestrator.
+
+Commands may override the agent's model for workflow-specific optimization.
+
+| Tier | Model | Rationale |
+|---|---|---|
+| Orchestrators (build, plan) | Explicit (glm-5.1 / glm-5.2) | Workflow owners, fixed reasoning level |
+| Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above orchestrator for deeper analysis |
+| Implementation agents | Explicit (glm-5.2 / nemotron) | Complex implementer uses reasoning-tier model; fast implementer uses lightweight model for speed |
+| Tier 1 analysts | Inherited (no explicit model) | Context-adaptive — benefits from invoker's model |
+| Commands | May override agent model | Workflow-specific optimization (e.g., /flow-plan → claude-opus-5) |
 
 ### Commands (`commands/`)
 

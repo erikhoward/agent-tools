@@ -16,7 +16,7 @@ if [ -z "$STAGED_SKILLS" ]; then
 fi
 
 # Path to validation script
-VALIDATOR=".opencode/skills/skill-creation/scripts/validate-skill.sh"
+VALIDATOR="scripts/validate.py"
 
 if [ ! -f "$VALIDATOR" ]; then
     echo "⚠️  Warning: Validation script not found at: $VALIDATOR"
@@ -38,7 +38,7 @@ for skill_file in $STAGED_SKILLS; do
         echo "  ---"
         
         # Run validation script on the skill directory
-        if ! "$VALIDATOR" "$skill_dir"; then
+        if ! python3 "$VALIDATOR" "$skill_dir"; then
             echo "❌ Validation failed for: $skill_file"
             VALIDATION_FAILED=1
         else

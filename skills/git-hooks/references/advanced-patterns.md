@@ -529,7 +529,7 @@ done
 
 ### Pattern: Continuous Integration
 
-See references/ci-cd-integration.md → Local Pre-Flight Checks.
+See ./ci-cd-integration.md → Local Pre-Flight Checks.
 
 ### Pattern: Security Scanning
 

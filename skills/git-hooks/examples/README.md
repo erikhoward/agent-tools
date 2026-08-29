@@ -1,10 +1,10 @@
 # Git Hooks Examples
 
-Working examples from the Base Skills project demonstrating Git hooks implementation patterns.
+Working examples from this skill demonstrating Git hooks implementation patterns.
 
 ## Overview
 
-This directory contains real-world examples of Git hooks used in this project. All examples are production-ready and actively used.
+This directory contains real-world examples of Git hooks demonstrating implementation patterns. All examples are ready for use in your projects.
 
 ## Directory Structure
 
@@ -39,7 +39,7 @@ Full implementation of the orchestrator pattern used in this project.
 **Usage**:
 ```bash
 # Copy to your repository
-cp -r modular-pre-commit/.githooks ~/my-project/
+mkdir -p ~/my-project/.githooks && cp -r modular-pre-commit/* ~/my-project/.githooks/
 
 # Make hooks executable
 chmod +x ~/my-project/.githooks/pre-commit
@@ -141,14 +141,7 @@ chmod +x .githooks/hooks.d/20-validate-skills.sh
 
 ## How This Project Uses Hooks
 
-### Active Hooks
-
-**Location**: `../../.githooks/`
-
-This project actively uses:
-1. **pre-commit** - Orchestrator for all pre-commit validations
-2. **10-validate-bash.sh** - Ensures all shell scripts are syntactically valid
-3. **20-validate-skills.sh** - Validates skill file structure and content
+This skill provides examples in `skills/git-hooks/examples/`. The patterns demonstrated here can be copied to your project using the setup instructions below.
 
 ### Installation
 

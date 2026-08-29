@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-commit hook orchestrator
+# This script executes all validation hooks in the hooks.d/ directory
+# in sorted order. If any hook fails, the commit is rejected.
+
+HOOK_DIR="$(cd "$(dirname "$0")" && pwd)"
+HOOKS_DIR="$HOOK_DIR/hooks.d"
+
+# Discover and run all executable files in hooks.d/ in sorted order
+for hook in "$HOOKS_DIR"/*.sh; do
+    [ -f "$hook" ] && [ -x "$hook" ] || continue
+    "$hook" "$@"
+done
+
+echo "✅ All pre-commit validations passed"
