@@ -81,7 +81,7 @@ Commands may override the agent's model for workflow-specific optimization.
 |---|---|---|
 | Orchestrators (build, plan) | Explicit (glm-5.1 / glm-5.2) | Workflow owners, fixed reasoning level |
 | Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above orchestrator for deeper analysis |
-| Implementation agents | Explicit (glm-5.2 / nemotron) | Complex implementer uses reasoning-tier model; fast implementer uses lightweight model for speed |
+| Implementation agents | Explicit (glm-5.2 / deepseek-v4-flash) | Complex implementer uses reasoning-tier model; fast implementer uses lightweight model for speed |
 | Tier 1 analysts | Inherited (no explicit model) | Context-adaptive — benefits from invoker's model |
 | Commands | May override agent model | Workflow-specific optimization (e.g., /flow-plan → claude-opus-5) |
 

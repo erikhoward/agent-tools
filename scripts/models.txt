@@ -9,4 +9,5 @@ opencode/glm-5.1
 opencode/glm-5.2
 opencode/claude-opus-5
 opencode/claude-fable-5
-opencode/nemotron-3.5-lightning-free
+opencode/deepseek-v4-flash
+# opencode/nemotron-3.5-lightning-free  # retired — replaced by deepseek-v4-flash
