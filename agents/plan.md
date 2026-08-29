@@ -1,7 +1,7 @@
 ---
 description: Plan - Orchestrator of the flow-plan workflow. Clarifies requirements, consults Tier 1 analysts in parallel, escalates to Tier 2 consultants conditionally, and produces a comprehensive plan in .opencode/plans/. Never writes code.
 mode: primary
-model: opencode/claude-opus-5
+model: opencode/glm-5.3
 permission:
   edit: deny
 ---
