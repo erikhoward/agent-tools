@@ -1,0 +1,77 @@
+# Agent Guidelines
+
+Behavioural guidelines to reduce common LLM coding mistakes, derived from
+[Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876).
+Bias toward caution over speed; for trivial tasks, use judgment. The skills
+and agents in this repo reinforce these principles — defer to them instead of
+restating.
+
+## 1. Think Before Coding
+
+Don't assume, don't hide confusion, surface tradeoffs. State assumptions
+explicitly; if multiple interpretations exist, present them; if unclear, stop
+and ask. For anything blocked, risky, or beyond scope, escalate to a
+consultant agent (see roster) rather than guess. `flow-plan` owns the
+clarify-first workflow.
+
+## 2. Simplicity First
+
+Minimum code that solves the problem — no features, abstractions,
+flexibility, or error handling beyond what was asked. If 200 lines could be
+50, rewrite. The `solid` skill encodes this as the Four Elements of Simple
+Design and YAGNI; load it for any coding or review task.
+
+## 3. Surgical Changes
+
+Touch only what you must. Don't refactor adjacent code, match existing style,
+and remove only the orphans your own changes create. Every changed line
+should trace to the request. `developer-fast` enforces minimal-context,
+minimal-change discipline; `solid` covers clean-code structure.
+
+## 4. Goal-Driven Execution
+
+Define success criteria and loop until verified: "add validation" → write
+failing tests, then make them pass. For multi-step work, `flow-implement`
+owns the decompose → delegate → per-task verify (tests, type-check, lint) →
+TodoWrite loop; `flow-plan` fixes acceptance criteria up front.
+
+## Repo Assets
+
+Load and follow the relevant skill, agent, or command instead of improvising.
+
+### Skills (`skills/`)
+
+| Skill | Use for |
+|---|---|
+| `solid` | Any coding/review — SOLID, TDD, clean code, code smells |
+| `git-commit` | Writing conventional commit messages |
+| `go`, `rust`, `golangci-lint` | Language-specific conventions + verification |
+| `github`, `git-hooks` | GitHub workflows, hooks |
+| `flow-ideate`, `flow-plan`, `flow-implement` | Ideation → planning → parallel build |
+
+### Agents (`agents/`)
+
+| Agent | Role |
+|---|---|
+| `build` | Orchestrator — runs `/flow-implement`, `/flow-ideate`; decomposes, delegates, verifies |
+| `plan` | Orchestrator — runs `/flow-plan`; clarifies, consults, produces the plan |
+| `developer-prime` | Complex, multi-file, long-context, frontend implementation |
+| `developer-fast` | Scoped, single-file, boilerplate, high-volume implementation |
+| `principal-architect` | Tier 2 — system strategy, cross-service architecture |
+| `solution-architect` | Tier 2 — concrete service designs, cross-component interfaces |
+| `database-architect` | Tier 2 — data modelling, schema, migrations |
+| `security-expert` | Tier 2 — threat modelling, auth, secure coding |
+| `code-analyst`, `performance-engineer`, `devops-engineer`, `test-engineer`, `ui-ux-designer` | Tier 1 analysts / specialists — blueprints, not decisions |
+
+`build` and `plan` are the workflow orchestrators. Tier 2 consultants operate
+**Think → Advise → Review**; Tier 1 analysts produce blueprints in parallel.
+See `flow-plan` for the full tier model.
+
+### Commands (`commands/`)
+
+| Command | Action |
+|---|---|
+| `/flow-ideate`, `/flow-plan`, `/flow-implement` | Ideation, planning, parallel build |
+| `/git-commit`, `/git-push`, `/git-commit-push` | Conventional commit, push, both |
+
+
