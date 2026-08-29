@@ -1,6 +1,6 @@
 ---
 description: Build - Orchestrator of the flow-implement workflow (and carrier for flow-ideate). Reads the plan, decomposes work, delegates to coder agents, escalates to consultants when blocked, and closes only when all tests pass. Does not write code.
-mode: subagent
+mode: primary
 model: opencode/glm-5.1
 ---
 
