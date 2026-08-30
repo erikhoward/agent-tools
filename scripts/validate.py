@@ -16,8 +16,8 @@ Finding = dict[str, str | int]
 def parse_frontmatter(fm_text: str) -> dict:
     """Parse YAML frontmatter using only re and string operations.
 
-    Handles: flat key: value pairs, key: | block scalars, one-level nested maps,
-    and simple list items (- value). Does NOT use PyYAML.
+    Handles: flat key: value pairs, key: | block scalars, and one-level
+    nested maps. List items (- value) are skipped. Does NOT use PyYAML.
     """
     result: dict = {}
     if not fm_text or not fm_text.startswith("---"):
@@ -141,7 +141,7 @@ def find_agent_mentions(content: str) -> list[tuple[str, int]]:
         "dataclass", "functools", "lru", "property", "staticmethod",
         "classmethod", "app", "router", "pytest", "unittest", "mock",
         "patch", "commitlint", "semantic-release", "babel", "types",
-        "storybook", "angular", "vue", "see", "parametrize",
+        "storybook", "angular", "vue", "see", "parametrize", "linter",
     }
     for line_num, line in enumerate(content.split("\n"), 1):
         if line.strip().startswith("```"):
@@ -427,15 +427,15 @@ def cross_reference(repo: Path, findings: list[Finding]) -> None:
             target = md_file.parent / link_path
             if not target.exists():
                 # Avoid duplicate findings for the same link
+                message = (
+                    f"Relative markdown link `[text]({link_path})` target does not exist"
+                )
                 already_reported = any(
-                    f["file"] == md_file.name and f"[{link_path}]" in f["message"]
+                    f["file"] == str(md_file) and f["message"] == message
                     for f in findings
                 )
                 if not already_reported:
-                    _add_finding(
-                        findings, "W", md_file, line_num,
-                        f"Relative markdown link `[text]({link_path})` target does not exist"
-                    )
+                    _add_finding(findings, "W", md_file, line_num, message)
 
 
 def roster_consistency(repo: Path, findings: list[Finding]) -> None:
