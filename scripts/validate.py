@@ -16,8 +16,10 @@ Finding = dict[str, str | int]
 def parse_frontmatter(fm_text: str) -> dict:
     """Parse YAML frontmatter using only re and string operations.
 
-    Handles: flat key: value pairs, key: | block scalars, and one-level
-    nested maps. List items (- value) are skipped. Does NOT use PyYAML.
+    Handles: flat key: value pairs, key: | block scalars, and nested maps
+    up to two levels (one pair of surrounding double quotes on nested-map
+    keys is stripped; deeper nesting does not crash). List items
+    (- value) are skipped. Does NOT use PyYAML.
     """
     result: dict = {}
     if not fm_text or not fm_text.startswith("---"):
@@ -94,19 +96,50 @@ def parse_frontmatter(fm_text: str) -> dict:
                 i += 1
                 nested: dict = {}
                 sub_lines: list[str] = []
+                child_indent: int | None = None
+                pending_key: str | None = None
+                pending: dict = {}
                 while i < len(fm_lines):
                     next_line = fm_lines[i]
                     if not next_line or not (next_line[0] == " " or next_line[0] == "\t"):
                         break
                     sub_lines.append(next_line.rstrip("\n"))
                     inner = next_line.strip()
+                    if not inner:
+                        i += 1
+                        continue
+                    indent = len(next_line) - len(next_line.lstrip(" \t"))
+                    if child_indent is None:
+                        child_indent = indent
+                    # Returning to first-level indent closes any open
+                    # second-level map.
+                    if pending_key is not None and indent <= child_indent:
+                        if pending:
+                            nested[pending_key] = pending
+                        pending_key = None
+                        pending = {}
                     if ":" in inner:
                         inner_key, _, inner_val = inner.partition(":")
                         inner_key = inner_key.strip()
+                        # Strip one pair of surrounding double quotes
+                        if (len(inner_key) >= 2 and inner_key.startswith('"')
+                                and inner_key.endswith('"')):
+                            inner_key = inner_key[1:-1]
                         inner_val = inner_val.strip()
                         if inner_val:
-                            nested[inner_key] = inner_val
+                            if pending_key is not None:
+                                # Second-level entry under the pending key
+                                pending[inner_key] = inner_val
+                            else:
+                                nested[inner_key] = inner_val
+                        elif indent <= child_indent:
+                            # Valueless first-level key may open a second-level map
+                            pending_key = inner_key
+                            pending = {}
                     i += 1
+                # Close a second-level map left open at the end of the block
+                if pending_key is not None and pending:
+                    nested[pending_key] = pending
                 if nested:
                     result[key] = nested
                 elif sub_lines:
@@ -230,6 +263,15 @@ def _add_finding(findings: list[Finding], ftype: str, file_path: Path,
     })
 
 
+def _parses_in_unit_range(value: str) -> bool:
+    """True if value parses as a float in the closed interval [0.0, 1.0]."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return False
+    return 0.0 <= number <= 1.0
+
+
 def validate_agents(repo: Path, findings: list[Finding]) -> None:
     """Validate agent schema in agents/*.md files."""
     agents_dir = repo / "agents"
@@ -252,6 +294,9 @@ def validate_agents(repo: Path, findings: list[Finding]) -> None:
 
     valid_modes = {"primary", "subagent", "all"}
     valid_permissions = {"allow", "ask", "deny"}
+    valid_colors = {"primary", "secondary", "accent", "success",
+                    "warning", "error", "info"}
+    color_pattern = re.compile(r"^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$")
     model_pattern = re.compile(r"^[a-z0-9_.-]+/[a-z0-9_.-]+$")
 
     for name, info in agent_files.items():
@@ -282,20 +327,61 @@ def validate_agents(repo: Path, findings: list[Finding]) -> None:
                              f"`model` format invalid: `{fm['model']}` does not match "
                              r"`^[a-z0-9_.-]+/[a-z0-9_.-]+$`")
 
-        # --- Optional: permission values ---
+        # --- Optional: permission values (flat or per-tool pattern maps) ---
         if "permission" in fm:
             perm = fm["permission"]
             if isinstance(perm, dict):
                 for p_key, p_val in perm.items():
-                    if p_val not in valid_permissions:
+                    # Keys are wildcard tool patterns, not a fixed list;
+                    # values are a decision or a {pattern: decision} map.
+                    values = p_val.values() if isinstance(p_val, dict) else [p_val]
+                    bad = [v for v in values if v not in valid_permissions]
+                    if bad:
                         _add_finding(findings, "W", path,
                                      _find_key_line(content, "permission"),
-                                     f"permission value `{p_val}` not in {valid_permissions}")
+                                     f"permission `{p_key}` value `{bad[0]}` "
+                                     f"not in {valid_permissions}")
             elif isinstance(perm, str):
                 if perm not in valid_permissions:
                     _add_finding(findings, "W", path,
                                  _find_key_line(content, "permission"),
                                  f"permission value `{perm}` not in {valid_permissions}")
+
+        # --- Optional: temperature / top_p must parse as floats in [0.0, 1.0] ---
+        if "temperature" in fm and not _parses_in_unit_range(fm["temperature"]):
+            _add_finding(findings, "W", path, _find_key_line(content, "temperature"),
+                         f"`temperature` must be a float in [0.0, 1.0], got `{fm['temperature']}`")
+        if "top_p" in fm and not _parses_in_unit_range(fm["top_p"]):
+            _add_finding(findings, "W", path, _find_key_line(content, "top_p"),
+                         f"`top_p` must be a float in [0.0, 1.0], got `{fm['top_p']}`")
+
+        # --- Optional: steps must parse as an integer >= 1 ---
+        if "steps" in fm:
+            try:
+                steps_ok = int(fm["steps"]) >= 1
+            except (TypeError, ValueError):
+                steps_ok = False
+            if not steps_ok:
+                _add_finding(findings, "W", path, _find_key_line(content, "steps"),
+                             f"`steps` must be an integer >= 1, got `{fm['steps']}`")
+
+        # --- Optional: hidden flag (only meaningful for subagents) ---
+        if "hidden" in fm:
+            if fm["hidden"] not in ("true", "false"):
+                _add_finding(findings, "W", path, _find_key_line(content, "hidden"),
+                             f"`hidden` must be `true` or `false`, got `{fm['hidden']}`")
+            elif fm["hidden"] == "true" and fm.get("mode") != "subagent":
+                _add_finding(findings, "W", path, _find_key_line(content, "hidden"),
+                             "`hidden` is `true` but mode is not `subagent`")
+
+        # --- Optional: color hex or named theme color ---
+        if "color" in fm:
+            color = fm["color"]
+            if not (isinstance(color, str)
+                    and (color_pattern.match(color) or color in valid_colors)):
+                _add_finding(findings, "W", path, _find_key_line(content, "color"),
+                             f"`color` must be hex (#RGB or #RRGGBB) or one of "
+                             f"{valid_colors}, got `{color}`")
 
 
 def validate_commands(repo: Path, findings: list[Finding]) -> None:
@@ -340,12 +426,20 @@ def validate_commands(repo: Path, findings: list[Finding]) -> None:
                              f"`model` format invalid: `{fm['model']}` does not match "
                              r"`^[a-z0-9_.-]+/[a-z0-9_.-]+$`")
 
+        # --- Optional: subtask flag ---
+        if "subtask" in fm:
+            if fm["subtask"] not in ("true", "false"):
+                _add_finding(findings, "W", md_file, _find_key_line(content, "subtask"),
+                             f"`subtask` must be `true` or `false`, got `{fm['subtask']}`")
+
 
 def validate_skills(repo: Path, findings: list[Finding]) -> None:
     """Validate skill schema in skills/*/SKILL.md files."""
     skills_dir = repo / "skills"
     if not skills_dir.exists():
         return
+
+    skill_name_pattern = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 
     for skill_dir in skills_dir.iterdir():
         if not skill_dir.is_dir():
@@ -370,6 +464,16 @@ def validate_skills(repo: Path, findings: list[Finding]) -> None:
             _add_finding(findings, "E", skill_md, _find_key_line(content, "name"),
                          f"`name` ({fm['name']}) does not match parent directory name ({dir_name})")
 
+        # --- Name format: lowercase alphanumeric slug, at most 64 chars ---
+        if isinstance(fm.get("name"), str):
+            skill_name = fm["name"]
+            if not skill_name_pattern.match(skill_name):
+                _add_finding(findings, "E", skill_md, _find_key_line(content, "name"),
+                             f"`name` must match `^[a-z0-9]+(-[a-z0-9]+)*$`, got `{skill_name}`")
+            elif len(skill_name) > 64:
+                _add_finding(findings, "E", skill_md, _find_key_line(content, "name"),
+                             f"`name` must be at most 64 characters, got {len(skill_name)}")
+
         # --- Required: description (non-empty) ---
         if "description" not in fm:
             _add_finding(findings, "E", skill_md, _find_key_line(content, "description"),
@@ -377,6 +481,9 @@ def validate_skills(repo: Path, findings: list[Finding]) -> None:
         elif not isinstance(fm["description"], str) or fm["description"].strip() == "":
             _add_finding(findings, "E", skill_md, _find_key_line(content, "description"),
                          "`description` must be a non-empty string")
+        elif len(fm["description"]) > 1024:
+            _add_finding(findings, "E", skill_md, _find_key_line(content, "description"),
+                         f"`description` must be at most 1024 characters, got {len(fm['description'])}")
 
         # --- Optional: license, compatibility, metadata (no format checks beyond existence) ---
         # Per spec: optional fields, no validation beyond presence
