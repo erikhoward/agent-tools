@@ -13,13 +13,13 @@ A curated set of opencode [agents](agents/), [commands](commands/), [skills](ski
 
 ## What's Included
 
-**13 agents**, **6 commands**, **11 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
+**13 agents**, **6 commands**, **12 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
 
 | Type | Count | Purpose |
 |---|---|---|
 | Agents | 13 | Orchestrators, consultants, analysts, coders |
 | Commands | 6 | `/flow-ideate`, `/flow-plan`, `/flow-implement`, `/git-commit`, `/git-push`, `/git-commit-push` |
-| Skills | 11 | Language conventions (go, python, rust), workflow guides (solid, flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
+| Skills | 12 | Language conventions (go, python, rust, typescript), workflow guides (solid, flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
 
 ## Install (global)
 
