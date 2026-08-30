@@ -126,13 +126,13 @@ install_link() {
   local src="$1" dst="$2"
   if [ -L "$dst" ]; then
     if [ "$(readlink "$dst")" = "$src" ]; then
-      CNT_SKIPPED=$((CNT_SKIPPED + 1)); printf '  ok    (linked): %s\n' "${dst#${OC_DIR}/}"; return 0
+      CNT_SKIPPED=$((CNT_SKIPPED + 1)); printf '  ok    (linked): %s\n' "${dst#"${OC_DIR}"/}"; return 0
     fi
     if [ "$FORCE" -eq 1 ]; then do_rm "$dst"
-    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (symlink exists, --force to replace): %s\n' "${dst#${OC_DIR}/}" >&2; return 0; fi
+    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (symlink exists, --force to replace): %s\n' "${dst#"${OC_DIR}"/}" >&2; return 0; fi
   elif [ -e "$dst" ]; then
     if [ "$FORCE" -eq 1 ]; then do_rm "$dst"
-    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (real file exists, --force to overwrite): %s\n' "${dst#${OC_DIR}/}" >&2; return 0; fi
+    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (real file exists, --force to overwrite): %s\n' "${dst#"${OC_DIR}"/}" >&2; return 0; fi
   fi
   do_ln "$src" "$dst"
   CNT_LINKED=$((CNT_LINKED + 1))
@@ -145,10 +145,10 @@ remove_link() {
     if [ "$(readlink "$dst")" = "$exp" ]; then
       do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
     else
-      printf '  skip  (points elsewhere): %s\n' "${dst#${OC_DIR}/}"
+      printf '  skip  (points elsewhere): %s\n' "${dst#"${OC_DIR}"/}"
     fi
   elif [ -e "$dst" ]; then
-    printf '  skip  (not a symlink, left alone): %s\n' "${dst#${OC_DIR}/}"
+    printf '  skip  (not a symlink, left alone): %s\n' "${dst#"${OC_DIR}"/}"
   fi
 }
 
@@ -171,7 +171,7 @@ install_all() {
 uninstall_all() {
   # Fallback: if source dir is missing, scan target for our symlinks
   if [ ! -d "$SOURCE_DIR" ]; then
-    local dst name dst_rm
+    local dst name
     for f in "$OC_DIR"/agents/*.md; do
       [ -e "$f" ] || [ -L "$f" ] || continue
       dst="$f"
