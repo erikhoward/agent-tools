@@ -44,6 +44,7 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 | Skill | Use for |
 |---|---|
 | `solid` | Any coding/review — SOLID, TDD, clean code, code smells |
+| `bare-bones` | Technical writing in ASD-STE100 Simplified Technical English |
 | `git-commit` | Writing conventional commit messages |
 | `go`, `python`, `rust`, `typescript`, `golangci-lint` | Language-specific conventions + verification |
 | `github`, `git-hooks` | GitHub workflows, hooks |
