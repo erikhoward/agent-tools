@@ -17,6 +17,7 @@
 #   --update           git pull the clone, then re-link (picks up new files)
 #   --uninstall        Remove the symlinks created by this tool
 #   --dry-run          Show what would happen without making changes
+#   --local            Install into the current project's .opencode/ instead of globally
 #   -h, --help         Show this help
 
 set -uo pipefail
@@ -30,6 +31,8 @@ FORCE=0
 UNINSTALL=0
 UPDATE=0
 DRY_RUN=0
+LOCAL=0
+PROJECT_ROOT=""
 
 CNT_LINKED=0
 CNT_SKIPPED=0
@@ -50,6 +53,7 @@ while [ $# -gt 0 ]; do
     --uninstall) UNINSTALL=1; shift ;;
     --update)    UPDATE=1; shift ;;
     --dry-run)   DRY_RUN=1; shift ;;
+    --local)     LOCAL=1; shift ;;
     -h|--help)   usage; exit 0 ;;
     *) die "unknown option: $1 (try --help)" ;;
   esac
@@ -69,31 +73,59 @@ abs_path() {
   fi
 }
 
+# --- local mode: project root is the git toplevel, or $PWD if not a repo ---
+resolve_project_root() {
+  local root home_abs
+  root="$(git rev-parse --show-toplevel 2>/dev/null)"
+  if [ -z "$root" ]; then
+    printf 'notice (local): not a git repo — using current directory as project root\n' >&2
+    root="$PWD"
+  fi
+  PROJECT_ROOT="$(abs_path "$root")"
+  # compare physical paths: on macOS $HOME may sit under /tmp or /var,
+  # which are symlinks to /private/... that abs_path resolves
+  home_abs="$(abs_path "$HOME")"
+  if [ "$PROJECT_ROOT" = "$home_abs" ]; then
+    printf 'WARN (local): project root resolved to HOME — opencode does not read ~/.opencode/\n' >&2
+  fi
+}
+
 is_repo() {
   [ -d "$1/agents" ] && [ -d "$1/skills" ] && [ -d "$1/commands" ] && [ -f "$1/AGENTS.md" ]
 }
 
 # --- dry-run-aware primitives ---
 do_mkdir() { if [ "$DRY_RUN" -eq 1 ]; then printf '  mkdir -p %s\n' "$1"; else mkdir -p "$1" || die "mkdir failed: $1"; fi; }
-do_rm()    { if [ "$DRY_RUN" -eq 1 ]; then printf '  rm -f %s\n' "$1"; else rm -f "$1"; fi; }
+do_rm()    { printf '  rm -f %s\n' "$1"; if [ "$DRY_RUN" -ne 1 ]; then rm -f "$1"; fi; }
 do_ln()    { if [ "$DRY_RUN" -eq 1 ]; then printf '  link: %s -> %s\n' "$2" "$1"; else ln -s "$1" "$2" || die "symlink failed: $2"; fi; }
 do_git()   { if [ "$DRY_RUN" -eq 1 ]; then printf '  git %s\n' "$*"; else git "$@" || die "git $1 failed"; fi; }
 
 resolve_source() {
   if [ "$UNINSTALL" -eq 1 ]; then
     # Uninstall mode: if SOURCE_DIR is set via --source, validate it;
-    # otherwise fall back to scanning target for symlinks
+    # otherwise fall back to scanning target for symlinks (global mode only)
     if [ -n "$SOURCE_DIR" ]; then
       SOURCE_DIR="$(abs_path "$SOURCE_DIR")" || die "--source not found: $SOURCE_DIR"
       if [ ! -d "$SOURCE_DIR" ]; then
+        if [ "$LOCAL" -eq 1 ]; then
+          die "clone not found; pass --source <path> to remove local symlinks from this project"
+        fi
         printf 'Source (missing): %s — will scan target for symlinks\n' "$SOURCE_DIR"
         return 0
       fi
-      [ -d "$SOURCE_DIR/.git" ] || die "clone not found at $SOURCE_DIR. Pass --source <path> to target your checkout."
+      if [ "$LOCAL" -eq 1 ]; then
+        [ -d "$SOURCE_DIR/.git" ] || die "clone not found; pass --source <path> to remove local symlinks from this project"
+      else
+        [ -d "$SOURCE_DIR/.git" ] || die "clone not found at $SOURCE_DIR. Pass --source <path> to target your checkout."
+      fi
     else
       SOURCE_DIR="$CLONE_DIR"
-      printf 'Source (missing): %s — will scan target for symlinks\n' "$SOURCE_DIR"
-      return 0
+      if [ "$LOCAL" -eq 1 ]; then
+        [ -d "$SOURCE_DIR/.git" ] || die "clone not found; pass --source <path> to remove local symlinks from this project"
+      else
+        printf 'Source (missing): %s — will scan target for symlinks\n' "$SOURCE_DIR"
+        return 0
+      fi
     fi
     return
   fi
@@ -126,13 +158,16 @@ install_link() {
   local src="$1" dst="$2"
   if [ -L "$dst" ]; then
     if [ "$(readlink "$dst")" = "$src" ]; then
-      CNT_SKIPPED=$((CNT_SKIPPED + 1)); printf '  ok    (linked): %s\n' "${dst#"${OC_DIR}"/}"; return 0
+      CNT_SKIPPED=$((CNT_SKIPPED + 1)); printf '  ok    (linked): %s\n' "${dst#"${TARGET_DIR}"/}"; return 0
     fi
     if [ "$FORCE" -eq 1 ]; then do_rm "$dst"
-    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (symlink exists, --force to replace): %s\n' "${dst#"${OC_DIR}"/}" >&2; return 0; fi
+    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (symlink exists, --force to replace): %s\n' "${dst#"${TARGET_DIR}"/}" >&2; return 0; fi
   elif [ -e "$dst" ]; then
+    if [ "$LOCAL" -eq 1 ]; then
+      CNT_WARNED=$((CNT_WARNED + 1)); printf 'WARN: real file exists — remove it manually to use the agent-tools version: %s\n' "${dst#"${TARGET_DIR}"/}" >&2; return 0
+    fi
     if [ "$FORCE" -eq 1 ]; then do_rm "$dst"
-    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (real file exists, --force to overwrite): %s\n' "${dst#"${OC_DIR}"/}" >&2; return 0; fi
+    else CNT_WARNED=$((CNT_WARNED + 1)); printf '  WARN  (real file exists, --force to overwrite): %s\n' "${dst#"${TARGET_DIR}"/}" >&2; return 0; fi
   fi
   do_ln "$src" "$dst"
   CNT_LINKED=$((CNT_LINKED + 1))
@@ -145,67 +180,84 @@ remove_link() {
     if [ "$(readlink "$dst")" = "$exp" ]; then
       do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
     else
-      printf '  skip  (points elsewhere): %s\n' "${dst#"${OC_DIR}"/}"
+      printf '  skip  (points elsewhere): %s\n' "${dst#"${TARGET_DIR}"/}"
     fi
   elif [ -e "$dst" ]; then
-    printf '  skip  (not a symlink, left alone): %s\n' "${dst#"${OC_DIR}"/}"
+    printf '  skip  (not a symlink, left alone): %s\n' "${dst#"${TARGET_DIR}"/}"
   fi
 }
 
 install_all() {
-  do_mkdir "$OC_DIR/agents"
-  do_mkdir "$OC_DIR/commands"
-  do_mkdir "$OC_DIR/skills"
+  if [ "$LOCAL" -eq 1 ]; then
+    # M3: refuse to install into symlinked target dirs — only real dirs
+    local p
+    for p in "$PROJECT_ROOT/.opencode" "$PROJECT_ROOT/.opencode/agents" \
+             "$PROJECT_ROOT/.opencode/commands" "$PROJECT_ROOT/.opencode/skills"; do
+      [ -L "$p" ] || continue
+      die "refusing: $p is a symlink (expected a real directory)"
+    done
+  fi
+
+  do_mkdir "$TARGET_DIR/agents"
+  do_mkdir "$TARGET_DIR/commands"
+  do_mkdir "$TARGET_DIR/skills"
 
   local f name
   for f in "$SOURCE_DIR"/agents/*.md; do [ -e "$f" ] || continue
-    name="$(basename "$f")"; install_link "$f" "$OC_DIR/agents/$name"; done
+    name="$(basename "$f")"; install_link "$f" "$TARGET_DIR/agents/$name"; done
   for f in "$SOURCE_DIR"/commands/*.md; do [ -e "$f" ] || continue
-    name="$(basename "$f")"; install_link "$f" "$OC_DIR/commands/$name"; done
+    name="$(basename "$f")"; install_link "$f" "$TARGET_DIR/commands/$name"; done
   for f in "$SOURCE_DIR"/skills/*/; do [ -d "$f" ] || continue
-    name="$(basename "$f")"; install_link "${f%/}" "$OC_DIR/skills/$name"; done
+    name="$(basename "$f")"; install_link "${f%/}" "$TARGET_DIR/skills/$name"; done
 
-  install_link "$SOURCE_DIR/AGENTS.md" "$OC_DIR/AGENTS.md"
+  if [ "$LOCAL" -eq 1 ]; then
+    printf 'note: AGENTS.md not installed locally — project AGENTS.md takes precedence; global install provides the default\n' >&2
+  else
+    install_link "$SOURCE_DIR/AGENTS.md" "$TARGET_DIR/AGENTS.md"
+  fi
 }
 
 uninstall_all() {
   # Fallback: if source dir is missing, scan target for our symlinks
-  if [ ! -d "$SOURCE_DIR" ]; then
+  # (global mode only — local uninstall fails closed in resolve_source, M4)
+  if [ "$LOCAL" -ne 1 ] && [ ! -d "$SOURCE_DIR" ]; then
     local dst name
-    for f in "$OC_DIR"/agents/*.md; do
+    for f in "$TARGET_DIR"/agents/*.md; do
       [ -e "$f" ] || [ -L "$f" ] || continue
       dst="$f"
       if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
         do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
       fi
     done
-    for f in "$OC_DIR"/commands/*.md; do
+    for f in "$TARGET_DIR"/commands/*.md; do
       [ -e "$f" ] || [ -L "$f" ] || continue
       dst="$f"
       if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
         do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
       fi
     done
-    for d in "$OC_DIR"/skills/*/; do
+    for d in "$TARGET_DIR"/skills/*/; do
       [ -e "$d" ] || [ -L "$d" ] || continue
       dst="$d"
       if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
         do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
       fi
     done
-    if [ -L "$OC_DIR/AGENTS.md" ] && readlink "$OC_DIR/AGENTS.md" | grep -q "agent-tools"; then
-      do_rm "$OC_DIR/AGENTS.md"; CNT_LINKED=$((CNT_LINKED + 1))
+    if [ -L "$TARGET_DIR/AGENTS.md" ] && readlink "$TARGET_DIR/AGENTS.md" | grep -q "agent-tools"; then
+      do_rm "$TARGET_DIR/AGENTS.md"; CNT_LINKED=$((CNT_LINKED + 1))
     fi
     return
   fi
   local f name
   for f in "$SOURCE_DIR"/agents/*.md; do [ -e "$f" ] || continue
-    name="$(basename "$f")"; remove_link "$OC_DIR/agents/$name" "$f"; done
+    name="$(basename "$f")"; remove_link "$TARGET_DIR/agents/$name" "$f"; done
   for f in "$SOURCE_DIR"/commands/*.md; do [ -e "$f" ] || continue
-    name="$(basename "$f")"; remove_link "$OC_DIR/commands/$name" "$f"; done
+    name="$(basename "$f")"; remove_link "$TARGET_DIR/commands/$name" "$f"; done
   for f in "$SOURCE_DIR"/skills/*/; do [ -d "$f" ] || continue
-    name="$(basename "$f")"; remove_link "$OC_DIR/skills/$name" "${f%/}"; done
-  remove_link "$OC_DIR/AGENTS.md" "$SOURCE_DIR/AGENTS.md"
+    name="$(basename "$f")"; remove_link "$TARGET_DIR/skills/$name" "${f%/}"; done
+  if [ "$LOCAL" -ne 1 ]; then
+    remove_link "$TARGET_DIR/AGENTS.md" "$SOURCE_DIR/AGENTS.md"
+  fi
 }
 
 summary() {
@@ -214,14 +266,24 @@ summary() {
   printf '  %s:    %s\n' "$label" "$CNT_LINKED"
   printf '  skipped:   %s\n' "$CNT_SKIPPED"
   printf '  warnings:  %s\n' "$CNT_WARNED"
-  printf '\nTarget:  %s\n' "$OC_DIR"
+  printf '\nTarget:  %s\n' "$TARGET_DIR"
   printf 'Source:  %s\n' "$SOURCE_DIR"
 }
+
+# --- local mode: target selection (R3) ---
+# Local mode principle: on the project's turf, this tool only adds or removes
+# what it created; anything else — warn, skip, or die, never delete.
+if [ "$LOCAL" -eq 1 ]; then
+  resolve_project_root
+  TARGET_DIR="${PROJECT_ROOT}/.opencode"
+else
+  TARGET_DIR="$OC_DIR"
+fi
 
 # --- main ---
 if [ "$UNINSTALL" -eq 1 ]; then
   resolve_source
-  printf 'Uninstalling agent-tools symlinks from %s\n' "$OC_DIR"
+  printf 'Uninstalling agent-tools symlinks from %s\n' "$TARGET_DIR"
   uninstall_all
   summary "removed"
   printf '\nRemoved agent-tools symlinks. The clone at %s is left in place.\n' "$SOURCE_DIR"
@@ -236,12 +298,29 @@ if [ "$UPDATE" -eq 1 ]; then
   FORCE=1
 fi
 
-printf 'Installing agent-tools into %s\n' "$OC_DIR"
+printf 'Installing agent-tools into %s\n' "$TARGET_DIR"
 install_all
+
+# M6: warn when local symlinks would be committed and dangle for other clones
+if [ "$LOCAL" -eq 1 ] && [ "$DRY_RUN" -ne 1 ] &&
+   git -C "$PROJECT_ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1 &&
+   ! git -C "$PROJECT_ROOT" check-ignore -q .opencode; then
+  printf 'note: symlinks in .opencode/ point to %s outside this repo — if committed they dangle for other clones; consider gitignoring .opencode/\n' "$SOURCE_DIR" >&2
+fi
+
 summary
 
 printf '\nNext steps:\n'
-printf '  - Restart opencode for the new agents/commands/skills/AGENTS.md to load.\n'
-printf '  - Update later:   ./install.sh --update   (or: cd %s && git pull)\n' "$SOURCE_DIR"
-printf '  - Uninstall:      ./install.sh --uninstall\n'
+if [ "$LOCAL" -eq 1 ]; then
+  printf '  - Restart opencode for the new agents/commands/skills to load.\n'
+else
+  printf '  - Restart opencode for the new agents/commands/skills/AGENTS.md to load.\n'
+fi
+if [ "$LOCAL" -eq 1 ]; then
+  printf '  - Update later:   ./install.sh --update --local   (run from inside the project)\n'
+  printf '  - Uninstall:      ./install.sh --uninstall --local   (run from inside the project)\n'
+else
+  printf '  - Update later:   ./install.sh --update   (or: cd %s && git pull)\n' "$SOURCE_DIR"
+  printf '  - Uninstall:      ./install.sh --uninstall\n'
+fi
 if [ "$DRY_RUN" -eq 1 ]; then printf '\n(dry-run: no changes were made)\n'; fi

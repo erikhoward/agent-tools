@@ -56,6 +56,41 @@ bash ~/.local/share/agent-tools/install.sh --source ~/.local/share/agent-tools
 
 Releases are cut from git tags (`v*`). Each GitHub Release attaches `install.sh`. The changelog is auto-generated from conventional commits. To install a specific release, pin the install URL to that tag.
 
+## Install (project-local)
+
+Makes agent-tools available to one project by symlinking into the project's `.opencode/` instead of the global config. Change to your project, then run the installer from the clone:
+
+```sh
+cd <your-project>
+bash ~/.local/share/agent-tools/install.sh --local
+```
+
+`install.sh` is not executable in git, so run it with `bash`.
+
+The script symlinks agents, commands, and skills into `<git-root>/.opencode/{agents,commands,skills}`. If the project is not a git repo, it falls back to the current directory's `.opencode/`. Run it from inside the project. From any subdirectory, the script finds the repo root with git.
+
+Then **restart opencode** so the new config loads.
+
+AGENTS.md is **not** installed locally. The project's own `AGENTS.md` takes precedence, and `.opencode/AGENTS.md` is not an opencode rules location. A global install provides the default for projects without their own `AGENTS.md`.
+
+In local mode, `--force` never overwrites real files. It replaces symlinks only and warns on real files.
+
+### Uninstall
+
+```sh
+bash ~/.local/share/agent-tools/install.sh --uninstall --local
+```
+
+Run it from inside the project. It removes only the symlinks this tool created. Real files and the `.opencode/` directory stay in place. If the source clone is missing, it fails closed with an error. Pass `--source <path>`.
+
+> **Warning:** the `.opencode/` symlinks point to your personal clone, outside the repo. If committed to git, they dangle for other clones. Consider gitignoring `.opencode/`.
+
+### Update
+
+```sh
+bash ~/.local/share/agent-tools/install.sh --update --local   # git pull + re-link
+```
+
 ## Local Development
 
 ```bash
@@ -96,6 +131,7 @@ cd ~/.local/share/agent-tools && git pull   # symlinks follow automatically
 
 | Flag | Effect |
 |---|---|
+| `--local` | Install into the current project's `.opencode/` instead of the global config |
 | `--source <path>` | Use an existing checkout instead of cloning |
 | `--clone-dir <path>` | Where to clone (default `~/.local/share/agent-tools`) |
 | `--force` | Overwrite existing files/symlinks in the target |
