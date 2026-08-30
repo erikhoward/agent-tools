@@ -52,7 +52,7 @@ teardown() {
 # ── INST-01: --dry-run ───────────────────────────────────────────────────
 
 @test "INST-01: --dry-run on fresh clone prints git clone command, exits 0, creates no symlinks" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --dry-run
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"git clone"* ]]
   # no symlinks created — the target dir should have no opencode symlinks
@@ -65,7 +65,7 @@ teardown() {
 # ── INST-02: --source <fixture> installs symlinks ────────────────────────
 
 @test "INST-02: --source <fixture> installs symlinks for agents, commands, skills, AGENTS.md" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
   # agents symlink
   [ -L "$XDG_CONFIG_HOME/opencode/agents/test-agent.md" ]
@@ -80,7 +80,7 @@ teardown() {
 # ── INST-03: Skill directory symlinks are created ─────────────────────────
 
 @test "INST-03: Skill directory symlinks are created (skills/test-skill/ -> ~/.config/opencode/skills/test-skill/)" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
   # skill directory symlink exists
   [ -L "$XDG_CONFIG_HOME/opencode/skills/test-skill" ]
@@ -93,7 +93,7 @@ teardown() {
 
 @test "INST-04: Idempotency — running install twice with same source succeeds, symlinks unchanged" {
   # first run
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 
   # verify symlinks exist after first run
@@ -103,7 +103,7 @@ teardown() {
   [ -L "$XDG_CONFIG_HOME/opencode/AGENTS.md" ]
 
   # second run
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 
   # symlinks should still exist after second run
@@ -122,7 +122,7 @@ teardown() {
   # create a real file at the target where AGENTS.md would go
   printf 'real content\n' > "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   # Script warns and exits 0; does NOT overwrite real file without --force
   [ "$status" -eq 0 ]
   [[ "$output" == *"real file exists"* ]]
@@ -140,7 +140,7 @@ teardown() {
   real_target="$XDG_CONFIG_HOME/opencode/AGENTS.real.md"
   printf 'real content\n' > "$real_target"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source" --force
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source" --force
   [ "$status" -eq 0 ]
   # the real file should now be a symlink
   [ -L "$XDG_CONFIG_HOME/opencode/AGENTS.md" ]
@@ -156,7 +156,7 @@ teardown() {
   foreign_target="/some/other/path.md"
   ln -sf "$foreign_target" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source" --force
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source" --force
   [ "$status" -eq 0 ]
 
   # the symlink should now point to the source
@@ -175,7 +175,7 @@ teardown() {
   foreign_target="/some/other/path.md"
   ln -sf "$foreign_target" "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 
   # the foreign symlink should still exist
@@ -190,11 +190,11 @@ teardown() {
 
 @test "INST-09: --uninstall removes only this tool's symlinks, leaves other files intact" {
   # first, install some stuff (without --source; uninstall will scan target for our symlinks)
-  run bash /Users/erikhoward/src/agent-tools/install.sh
+  run bash "$BATS_TEST_DIRNAME/../install.sh"
   [ "$status" -eq 0 ]
 
   # now uninstall (without --source; fallback scans target for agent-tools symlinks)
-  run bash /Users/erikhoward/src/agent-tools/install.sh --uninstall
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall
   [ "$status" -eq 0 ]
 
   # our symlinks should be removed
@@ -208,11 +208,11 @@ teardown() {
 
 @test "INST-10: --uninstall leaves the clone directory in place" {
   # first, install some stuff (this creates the clone/symlinks)
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 
   # uninstall
-  run bash /Users/erikhoward/src/agent-tools/install.sh --uninstall
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall
   [ "$status" -eq 0 ]
 
   # the source fixture dir should still exist (uninstall leaves the clone in place)
@@ -233,7 +233,7 @@ teardown() {
   non_repo="$TDIR/non-repo-dir"
   mkdir -p "$non_repo"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$non_repo"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$non_repo"
   [ "$status" -ne 0 ]
   [[ "$output" == *"not an agent-tools checkout"* || "$output" == *"is not a valid"* ]]
 }
@@ -241,7 +241,7 @@ teardown() {
 # ── INST-13: Unknown option fails ────────────────────────────────────────
 
 @test "INST-13: Unknown option (e.g., --bogus) fails with error" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --bogus
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --bogus
   [ "$status" -ne 0 ]
   [[ "$output" == *"unknown option"* ]]
 }
@@ -249,7 +249,7 @@ teardown() {
 # ── INST-14: --help prints usage and exits 0 ─────────────────────────────
 
 @test "INST-14: --help prints usage and exits 0" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --help
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage:"* ]]
 }
@@ -261,7 +261,7 @@ teardown() {
   custom_config="$TDIR/custom-config"
   export XDG_CONFIG_HOME="$custom_config"
 
-  run bash /Users/erikhoward/src/agent-tools/install.sh --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 
   # symlinks should be under the custom path
@@ -272,6 +272,6 @@ teardown() {
 # ── INST-16: --clone-dir ──────────────────────────────────────────────────
 
 @test "INST-16: --clone-dir <path> custom clone directory is used" {
-  run bash /Users/erikhoward/src/agent-tools/install.sh --clone-dir "$TDIR/my-clone" --source "$TDIR/source"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --clone-dir "$TDIR/my-clone" --source "$TDIR/source"
   [ "$status" -eq 0 ]
 }
