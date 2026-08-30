@@ -1,6 +1,6 @@
 ---
 name: bare-bones
-description: Use when writing, rewriting, or reviewing technical prose — documentation, READMEs, runbooks, procedures, error messages, release notes, incident reports, API guides, PR descriptions, changelogs, and agent instructions. Applies ASD-STE100 Simplified Technical English rules: short sentences, active voice, simple tenses, one word one meaning, no semicolons, no phrasal verbs, condition-first commands. Triggers on "make this not sound like AI", "de-slop this draft", "simplify this", "STE", "ASD-STE100", "Simplified Technical English", "make docs clear". Not for marketing or creative copy.
+description: 'Use when writing, rewriting, or reviewing technical prose — documentation, READMEs, runbooks, procedures, error messages, release notes, incident reports, API guides, PR descriptions, changelogs, and agent instructions. Applies ASD-STE100 Simplified Technical English rules: short sentences, active voice, simple tenses, one word one meaning, no semicolons, no phrasal verbs, condition-first commands. Triggers on "make this not sound like AI", "de-slop this draft", "simplify this", "STE", "ASD-STE100", "Simplified Technical English", "make docs clear". Not for marketing or creative copy.'
 license: MIT
 compatibility: opencode
 metadata:
