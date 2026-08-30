@@ -32,7 +32,15 @@ jobs:
           if grep -qF "## [${VERSION}]" CHANGELOG.md; then
             echo "Version ${VERSION} already in CHANGELOG.md — preserving curated content."
           else
-            git cliff --current --prepend CHANGELOG.md
+            # git-cliff 2.x requires -l/-u with --prepend; --latest ≡ --current at a tag checkout.
+            git cliff --latest --prepend CHANGELOG.md
+            PREV_TAG="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+            if [ -n "$PREV_TAG" ]; then
+              LINK="[${VERSION}]: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}..${GITHUB_REF_NAME}"
+            else
+              LINK="[${VERSION}]: https://github.com/${GITHUB_REPOSITORY}/commits/${GITHUB_REF_NAME}"
+            fi
+            grep -qF "${LINK}" CHANGELOG.md || printf '%s\n' "${LINK}" >> CHANGELOG.md
             echo "Prepended ${VERSION} section to CHANGELOG.md."
           fi
 
