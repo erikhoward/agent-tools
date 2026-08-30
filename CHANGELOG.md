@@ -5,6 +5,20 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-08-30
+
+### Added
+
+- Add --local project-level install mode
+
+### Changed
+
+- Remove stale note that install.sh is not executable
+
+### Fixed
+
+- Use --latest for changelog prepend with git-cliff 2.x
+
 ## [1.0.0] - 2026-08-29
 
 ### Added
@@ -32,3 +46,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Quote the bare-bones description for valid YAML parsing.
 
 [1.0.0]: https://github.com/erikhoward/agent-tools/commits/v1.0.0
+[1.1.0]: https://github.com/erikhoward/agent-tools/compare/v1.0.0..v1.1.0
