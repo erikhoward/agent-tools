@@ -97,6 +97,20 @@ tasks in parallel:
 Run all independent tasks simultaneously. Never serialise work that can be
 parallelised.
 
+### Dispatch Sizing — Hard Rule
+
+Never bundle a whole plan or a large step range into one task dispatch.
+
+- Cap every dispatch at **2-3 plan steps** (or one scoped change)
+- Split larger plans across multiple dispatches; run independent dispatches
+  in parallel
+- If the coder must hold the whole spec in mind before writing the first
+  line, the dispatch is too big — split it
+
+Oversized dispatches invite long planning spells with no tool calls and can
+end with no usable output. Small dispatches force incremental work: read a
+little, change a little, verify.
+
 ### Pass Style Context in the Task Prompt
 
 Before dispatching each task, check whether the repo has skills matching the
@@ -258,6 +272,7 @@ Present a concise summary covering:
 - **Use the task prompt template.** Never delegate with a vague description — include task, context, files, consultation outputs, and success criteria.
 - **Verify each task before moving on.** Run tests, type-check, and lint after every task. Do not accumulate failures.
 - **Delegate to developer-prime and developer-fast.** These are the two coder agents in this workflow.
+- **Cap dispatch size.** Never bundle more than 2-3 plan steps into a single task dispatch. Split large plans across multiple dispatches.
 - **Consult immediately when blocked.** principal-architect, solution-architect, database-architect, and security-expert are on call for Think → Advise → Review.
 - **Parallel by default.** Never run independent tasks or consultations sequentially.
 - **Track every task.** Use TodoWrite throughout. No task is done until marked completed.

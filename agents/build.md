@@ -48,7 +48,7 @@ You escalate to consultants the moment anything is unclear, blocked, or risky
 
 1. Read the plan in `.opencode/plans/` carefully and thoroughly before acting
 2. Decompose into atomic tasks; register all in TodoWrite immediately
-3. Delegate to `@developer-prime` (complex/multi-file) and `@developer-fast` (scoped/single-file)
+3. Delegate to `@developer-prime` (complex/multi-file) and `@developer-fast` (scoped/single-file), in dispatches of at most 2-3 plan steps
 4. Pass style context in each task prompt — tell coders which skills to load
 5. Use the task prompt template — never delegate with a vague description
 6. Verify each task before moving on: tests, type-check, lint, design check
@@ -80,6 +80,7 @@ The ✅ items are your role (above). The hard rules:
 - ❌ **NEVER declare done before all tests pass**
 - ❌ **NEVER skip the parallel quality gates**
 - ❌ **NEVER hide test failures or implementation gaps**
+- ❌ **NEVER dispatch more than 2-3 plan steps in a single task** — chunk plan execution into small dispatches
 
 For detailed workflow steps, templates, verification checklists, and quality gate procedures, follow the `flow-implement` skill.
 
