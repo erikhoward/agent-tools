@@ -2,7 +2,7 @@
 #
 # agent-tools install.bats — functional test cases for install.sh
 #
-# Tests:  INST-01 through INST-16
+# Tests:  INST-01 through INST-29
 # Scope:  all tests use isolated mktemp -d fake $HOME with temp XDG_CONFIG_HOME.
 # No test touches the real ~/.config/opencode/.
 #
@@ -253,6 +253,7 @@ teardown() {
   run bash "$BATS_TEST_DIRNAME/../install.sh" --help
   [ "$status" -eq 0 ]
   [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"--local"* ]]
 }
 
 # ── INST-15: XDG override ────────────────────────────────────────────────
@@ -275,4 +276,193 @@ teardown() {
 @test "INST-16: --clone-dir <path> custom clone directory is used" {
   run bash "$BATS_TEST_DIRNAME/../install.sh" --clone-dir "$TDIR/my-clone" --source "$TDIR/source"
   [ "$status" -eq 0 ]
+}
+
+# ── INST-17: --local --source in a non-git dir ─────────────────────────────
+
+@test "INST-17: --local --source installs symlinks into \$PWD/.opencode/, skips AGENTS.md, touches nothing global" {
+  cd "$TDIR"  # not a git repo — project root falls back to \$PWD
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [ -L "$TDIR/.opencode/agents/test-agent.md" ]
+  [ -L "$TDIR/.opencode/commands/test-cmd.md" ]
+  [ -L "$TDIR/.opencode/skills/test-skill" ]
+  # no local AGENTS.md — .opencode/AGENTS.md is not an opencode rules location
+  [ ! -e "$TDIR/.opencode/AGENTS.md" ]
+  # global config untouched
+  [ ! -e "$XDG_CONFIG_HOME/opencode" ]
+}
+
+# ── INST-18: --local resolves project root via git toplevel ────────────────
+
+@test "INST-18: --local --source from a subdir installs into the git toplevel's .opencode/, not the subdir's" {
+  cd "$TDIR"
+  mkdir -p proj/sub
+  git -C proj init -q
+  cd proj/sub
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [ -L "$TDIR/proj/.opencode/agents/test-agent.md" ]
+  [ -L "$TDIR/proj/.opencode/commands/test-cmd.md" ]
+  [ -L "$TDIR/proj/.opencode/skills/test-skill" ]
+  [ ! -e "$TDIR/proj/sub/.opencode" ]
+}
+
+# ── INST-19: --local --dry-run ────────────────────────────────────────────
+
+@test "INST-19: --local --source --dry-run prints the plan with .opencode paths, creates no .opencode/" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"mkdir -p"* ]]
+  [[ "$output" == *".opencode"* ]]
+  [[ "$output" == *"link:"* ]]
+  [ ! -e "$TDIR/.opencode" ]
+}
+
+# ── INST-20: --local idempotency ──────────────────────────────────────────
+
+@test "INST-20: --local twice with the same source is idempotent, exits 0 both times" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [ -L "$TDIR/.opencode/agents/test-agent.md" ]
+  [ -L "$TDIR/.opencode/commands/test-cmd.md" ]
+  [ -L "$TDIR/.opencode/skills/test-skill" ]
+}
+
+# ── INST-21: real file at local target without --force ─────────────────────
+
+@test "INST-21: --local with a real file at the target warns, exits 0, leaves the file untouched" {
+  cd "$TDIR"
+  mkdir -p proj/.opencode/agents proj/.opencode/commands proj/.opencode/skills
+  printf 'user content\n' > proj/.opencode/agents/test-agent.md
+  cd proj
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARN: real file exists"* ]]
+  # warning shows the target-stripped path, not an absolute path
+  [[ "$output" == *"agents/test-agent.md"* ]]
+  [ -f "$TDIR/proj/.opencode/agents/test-agent.md" ]
+  [ ! -L "$TDIR/proj/.opencode/agents/test-agent.md" ]
+  grep -q 'user content' "$TDIR/proj/.opencode/agents/test-agent.md"
+}
+
+# ── INST-22: real file at local target WITH --force ────────────────────────
+
+@test "INST-22: --local --force still warns and never replaces a real file (inverse of global INST-06, M1)" {
+  cd "$TDIR"
+  mkdir -p proj/.opencode/agents proj/.opencode/commands proj/.opencode/skills
+  printf 'user content\n' > proj/.opencode/agents/test-agent.md
+  cd proj
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source" --force
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"WARN: real file exists"* ]]
+  [ -f "$TDIR/proj/.opencode/agents/test-agent.md" ]
+  [ ! -L "$TDIR/proj/.opencode/agents/test-agent.md" ]
+  grep -q 'user content' "$TDIR/proj/.opencode/agents/test-agent.md"
+}
+
+# ── INST-23: --uninstall --local with source present ───────────────────────
+
+@test "INST-23: --uninstall --local removes only this tool's symlinks, leaves foreign files and .opencode/ dir" {
+  cd "$TDIR"
+  # local uninstall requires the source clone to exist (fails closed otherwise, M4)
+  git -C "$TDIR/source" init -q
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [ -L "$TDIR/.opencode/agents/test-agent.md" ]
+
+  # foreign real file added after install
+  printf 'foreign content\n' > "$TDIR/.opencode/foreign.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [ ! -L "$TDIR/.opencode/agents/test-agent.md" ]
+  [ ! -L "$TDIR/.opencode/commands/test-cmd.md" ]
+  [ ! -L "$TDIR/.opencode/skills/test-skill" ]
+  [ -f "$TDIR/.opencode/foreign.md" ]
+  [ -d "$TDIR/.opencode" ]
+}
+
+# ── INST-24: --uninstall --local fails closed on missing source ────────────
+
+@test "INST-24: --uninstall --local with a missing --source path exits non-zero and touches nothing (M4)" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --local --source "$TDIR/missing-clone"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"clone not found"* ]]
+  [ ! -e "$TDIR/.opencode" ]
+}
+
+# ── INST-25: --local --force never touches project AGENTS.md ───────────────
+
+@test "INST-25: --local --force leaves a real project AGENTS.md untouched and installs no .opencode/AGENTS.md" {
+  cd "$TDIR"
+  mkdir -p proj
+  printf 'my project rules\n' > proj/AGENTS.md
+  cd proj
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source" --force
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"AGENTS.md not installed locally"* ]]
+  [ -f "$TDIR/proj/AGENTS.md" ]
+  [ ! -L "$TDIR/proj/AGENTS.md" ]
+  grep -q 'my project rules' "$TDIR/proj/AGENTS.md"
+  [ ! -e "$TDIR/proj/.opencode/AGENTS.md" ]
+}
+
+# ── INST-26: --local --clone-dir compose ───────────────────────────────────
+
+@test "INST-26: --local --clone-dir --dry-run prints both the clone dir and .opencode paths" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --clone-dir "$TDIR/my-clone" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"my-clone"* ]]
+  [[ "$output" == *".opencode"* ]]
+}
+
+# ── INST-27: HOME as project root ──────────────────────────────────────────
+
+@test "INST-27: --local from \$HOME prints the HOME warning and the PWD-fallback notice" {
+  cd "$HOME"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source" --dry-run
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"not a git repo"* ]]
+  [[ "$output" == *"project root resolved to HOME"* ]]
+}
+
+# ── INST-28: symlinked .opencode refused (M3) ──────────────────────────────
+
+@test "INST-28: --local refuses a pre-existing symlinked .opencode and writes nothing (M3)" {
+  cd "$TDIR"
+  mkdir -p proj
+  ln -s "$TDIR/elsewhere" proj/.opencode
+  cd proj
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"is a symlink"* ]]
+  [ ! -e "$TDIR/elsewhere" ]
+}
+
+# ── INST-29: M6 gitignore advisory ─────────────────────────────────────────
+
+@test "INST-29: real local install warns when .opencode/ is not gitignored, stays quiet when it is (M6)" {
+  cd "$TDIR"
+  mkdir -p proj
+  git -C proj init -q
+  cd proj
+
+  # not gitignored → advisory present
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"consider gitignoring .opencode"* ]]
+
+  # gitignored → advisory absent
+  printf '.opencode/\n' > .gitignore
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
+  [ "$status" -eq 0 ]
+  [[ "$output" != *"consider gitignoring .opencode"* ]]
 }
