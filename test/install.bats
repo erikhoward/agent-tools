@@ -52,6 +52,7 @@ teardown() {
 # ── INST-01: --dry-run ───────────────────────────────────────────────────
 
 @test "INST-01: --dry-run on fresh clone prints git clone command, exits 0, creates no symlinks" {
+  cd "$TDIR"  # run from outside any checkout so the clone path is exercised
   run bash "$BATS_TEST_DIRNAME/../install.sh" --dry-run
   [ "$status" -eq 0 ]
   [[ "$output" == *"git clone"* ]]
