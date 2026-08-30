@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install git-cliff
+        uses: taiki-e/install-action@v2
+        with:
+          tool: git-cliff
+
+      - name: Generate release notes for this tag
+        run: git cliff --current --strip header --output release-notes.md
+
+      - name: Update changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Skip if this version is already in CHANGELOG.md (e.g. hand-seeded v1.0.0) — preserves curated content.
+          if grep -qF "## [${VERSION}]" CHANGELOG.md; then
+            echo "Version ${VERSION} already in CHANGELOG.md — preserving curated content."
+          else
+            git cliff --current --prepend CHANGELOG.md
+            echo "Prepended ${VERSION} section to CHANGELOG.md."
+          fi
+
+      - name: Commit changelog to default branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          if git diff --cached --quiet; then
+            echo "No changelog changes to commit."
+          else
+            git commit -m "docs(changelog): update for ${GITHUB_REF_NAME}"
+            git push origin "HEAD:refs/heads/${{ github.event.repository.default_branch }}"
+          fi
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: release-notes.md
+          files: install.sh
+          fail_on_unmatched_files: true

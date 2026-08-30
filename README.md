@@ -4,6 +4,8 @@ A curated set of opencode [agents](agents/), [commands](commands/), [skills](ski
 
 ![CI](https://github.com/erikhoward/agent-tools/actions/workflows/validate.yml/badge.svg)
 
+See [CHANGELOG.md](CHANGELOG.md) for release history, or the [GitHub Releases](https://github.com/erikhoward/agent-tools/releases) page.
+
 ## Prerequisites
 
 - **opencode** installed and configured
@@ -28,7 +30,7 @@ Makes everything available in every opencode project by symlinking into `~/.conf
 ```sh
 curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/main/install.sh | bash
 ```
-> **Security tip:** The one-liner above fetches from `main`. For production use, pin to a specific release tag (e.g., replace `/main/` with `/v1.0.0/`) or use the `--source` alternative below to review the code before running.
+> **Security tip:** The one-liner above fetches from `main`. `v1.0.0` is the current release. For production use, pin to a release tag (e.g., replace `/main/` with `/v1.0.0/`) or use the `--source` alternative below to review the code before running.
 
 Or, from a clone:
 
@@ -49,6 +51,10 @@ git clone https://github.com/erikhoward/agent-tools.git ~/.local/share/agent-too
 less ~/.local/share/agent-tools/install.sh
 bash ~/.local/share/agent-tools/install.sh --source ~/.local/share/agent-tools
 ```
+
+### Releases
+
+Releases are cut from git tags (`v*`). Each GitHub Release attaches `install.sh`. The changelog is auto-generated from conventional commits. To install a specific release, pin the install URL to that tag.
 
 ## Local Development
 
