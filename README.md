@@ -54,7 +54,7 @@ bash ~/.local/share/agent-tools/install.sh --source ~/.local/share/agent-tools
 
 ### Releases
 
-Releases are cut from git tags (`v*`). Each GitHub Release attaches `install.sh`. The changelog is auto-generated from conventional commits. To install a specific release, pin the install URL to that tag.
+Releases are cut from git tags (`v*`). Each GitHub Release attaches `install.sh`. The changelog is generated from conventional commits with git-cliff and prepared before tagging — see [CONTRIBUTING.md](CONTRIBUTING.md) (Cutting a Release). To install a specific release, pin the install URL to that tag.
 
 ## Install (project-local)
 

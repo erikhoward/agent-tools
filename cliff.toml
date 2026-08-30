@@ -2,9 +2,10 @@
 # https://git-cliff.org/docs/configuration
 #
 # Emits a Keep a Changelog (https://keepachangelog.com/en/1.1.0/) changelog
-# from Conventional Commits (https://www.conventionalcommits.org/). The release
-# workflow (.github/workflows/release.yml) regenerates CHANGELOG.md from this
-# config on every v* tag push.
+# from Conventional Commits (https://www.conventionalcommits.org/). CHANGELOG.md
+# is generated from this config with git-cliff and committed before tagging —
+# see CONTRIBUTING.md (Cutting a Release). The release workflow uses this
+# config for the release notes.
 
 [remote.github]
 owner = "erikhoward"

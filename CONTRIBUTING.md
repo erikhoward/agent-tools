@@ -48,3 +48,34 @@ CI runs automatically on PRs. The `validate` job (validate.py + shellcheck + bat
 ## Commit Style
 
 Use conventional commits (e.g., `fix: correct model ID in plan.md`, `feat: add python skill`, `docs: update README`).
+
+## Cutting a Release
+
+The changelog is prepared locally before tagging. The Release workflow only generates the release notes and creates the GitHub Release with `install.sh` attached — it cannot push to `main` (branch protection blocks the workflow bot).
+
+Requires [git-cliff](https://git-cliff.org) (`brew install git-cliff`).
+
+Prepare the changelog BEFORE creating the tag. Once a tag exists on the commits, they are no longer "unreleased" and `--unreleased` returns nothing.
+
+```sh
+VERSION="1.2.0"  # example
+
+# 1. Prepend the new version's section
+git cliff --unreleased --tag "v${VERSION}" --prepend CHANGELOG.md
+
+# 2. Append the reference link (--prepend omits the footer)
+PREV_TAG="$(git describe --tags --abbrev=0 HEAD)"
+LINK="[${VERSION}]: https://github.com/erikhoward/agent-tools/compare/${PREV_TAG}..v${VERSION}"
+grep -qF "${LINK}" CHANGELOG.md || printf '%s\n' "${LINK}" >> CHANGELOG.md
+
+# 3. Commit and push (chore: keeps this commit out of the generated changelog)
+git add CHANGELOG.md
+git commit -m "chore(changelog): update for v${VERSION}"
+git push origin main
+
+# 4. Tag and push — this triggers the Release workflow
+git tag -a "v${VERSION}" -m "v${VERSION}"
+git push origin "v${VERSION}"
+```
+
+If no previous tag exists, use a commits link instead: `https://github.com/erikhoward/agent-tools/commits/v${VERSION}`.
