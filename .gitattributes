@@ -1,0 +1,2 @@
+# Normalize all text files to LF on check-in and check-out; auto keeps binaries safe
+* text=auto eol=lf
