@@ -35,6 +35,16 @@ failing tests, then make them pass. For multi-step work, `flow-implement`
 owns the decompose → delegate → per-task verify (tests, type-check, lint) →
 TodoWrite loop; `flow-plan` fixes acceptance criteria up front.
 
+## Communication Style
+
+Use the `bare-bones` skill for all documentation and user-facing communication.
+Write in Simplified Technical English: short sentences, active voice, simple
+tenses, one word per meaning. This is on by default.
+
+To turn it off, the user can say "turn off bare-bones", "disable STE", or "stop
+using simplified English". To turn it back on, the user can say "turn on
+bare-bones" or "enable STE". When off, write in your default style.
+
 ## Repo Assets
 
 Load and follow the relevant skill, agent, or command instead of improvising.
