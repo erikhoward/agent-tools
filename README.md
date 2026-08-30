@@ -30,7 +30,7 @@ Makes everything available in every opencode project by symlinking into `~/.conf
 ```sh
 curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/main/install.sh | bash
 ```
-> **Security tip:** The one-liner above fetches from `main`. `v1.0.0` is the current release. For production use, pin to a release tag (e.g., replace `/main/` with `/v1.0.0/`) or use the `--source` alternative below to review the code before running.
+> **Security tip:** The one-liner above fetches from `main`, which can run ahead of the latest tagged release. For production use, pin to a release tag — see the [GitHub Releases](https://github.com/erikhoward/agent-tools/releases) page for current tags. Or use the `--source` alternative below to review the code before running.
 
 Or, from a clone:
 
@@ -149,6 +149,3 @@ Community marketplaces (e.g. `opencode-marketplace`) namespace files on install 
 
 - **Global AGENTS.md precedence**: a project's own `AGENTS.md` takes precedence over the global one. So this install provides a global *default* for projects without their own `AGENTS.md`; it does not override project-level rules. If you want these guidelines always applied, add the global file to `instructions` in your `~/.config/opencode/opencode.json`.
 - opencode loads config at startup. After any change to agents/commands/skills/AGENTS.md, **restart opencode** for it to take effect.
-```
-
-
