@@ -19,12 +19,8 @@ jobs:
       - name: Run Python validator
         run: python3 scripts/validate.py
 
-      - name: Run shellcheck on install.sh and example .sh files
-        uses: ludeeus/action-shellcheck@v2
-        with:
-          severity: style
-          additional_files: install.sh
-          file: skills/git-hooks/examples/*.sh
+      - name: Run shellcheck on shell scripts
+        run: shellcheck -S style $(git ls-files '*.sh')
 
       - name: Install bats-core
         run: sudo apt-get install -y bats
