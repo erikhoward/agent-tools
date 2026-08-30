@@ -65,8 +65,6 @@ cd <your-project>
 bash ~/.local/share/agent-tools/install.sh --local
 ```
 
-`install.sh` is not executable in git, so run it with `bash`.
-
 The script symlinks agents, commands, and skills into `<git-root>/.opencode/{agents,commands,skills}`. If the project is not a git repo, it falls back to the current directory's `.opencode/`. Run it from inside the project. From any subdirectory, the script finds the repo root with git.
 
 Then **restart opencode** so the new config loads.
