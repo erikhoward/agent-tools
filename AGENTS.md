@@ -45,7 +45,7 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 |---|---|
 | `solid` | Any coding/review — SOLID, TDD, clean code, code smells |
 | `git-commit` | Writing conventional commit messages |
-| `go`, `python`, `rust`, `golangci-lint` | Language-specific conventions + verification |
+| `go`, `python`, `rust`, `typescript`, `golangci-lint` | Language-specific conventions + verification |
 | `github`, `git-hooks` | GitHub workflows, hooks |
 | `flow-ideate`, `flow-plan`, `flow-implement` | Ideation → planning → parallel build |
 
