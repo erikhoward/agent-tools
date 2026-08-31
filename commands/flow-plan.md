@@ -4,8 +4,7 @@ agent: plan
 model: opencode/claude-opus-5
 ---
 
-$1
-
+Feature name: $1
 
 Use `flow-plan` skill and plan the task.
 
