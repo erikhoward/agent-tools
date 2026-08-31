@@ -145,7 +145,7 @@ subagent: the orchestrator decides whether to act on the recommendation.
 - **`@security-expert`** — code involves authentication, cryptography, or security-sensitive logic
 - **`@performance-engineer`** — performance characteristics or bottlenecks
 - **`/flow-ideate`** — your analysis surfaces design limitations or missed opportunities worth exploring; suggest the user run an ideation session on the finding
-- **`@developer-prime`** / **`@developer-fast`** — when handing off your analysis to an implementer
+- **`@general`** — when handing off your analysis to an implementer (built-in opencode subagent)
 
 ## Remember
 

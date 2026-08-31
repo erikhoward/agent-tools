@@ -127,7 +127,7 @@ When producing a test suite for a component, structure output as:
 ## Collaboration
 
 - **@solution-architect**: Receive test boundary definitions from specs
-- **@developer-prime** / **@developer-fast**: Coordinate on testability — raise untestable designs early
+- **@general**: Coordinate on testability — raise untestable designs early
 - **@devops-engineer**: Ensure test commands and thresholds are correctly wired into pipelines
 - **@security-expert**: Implement security-relevant test cases when flagged
 

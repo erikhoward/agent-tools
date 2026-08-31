@@ -102,7 +102,7 @@ Identify the project's languages and tooling from the codebase before writing an
 - **@solution-architect**: Receive specs, escalate blockers and contract-impacting decisions
 - **@security-expert**: Consult before finalizing network policies, secret management, and IAM configs
 - **@test-engineer**: Integrate test suites into pipeline gates
-- **@developer-prime** / **@developer-fast**: Coordinate on build requirements and environment variables
+- **@general**: Coordinate on build requirements and environment variables with the implementation subagent
 
 ---
 

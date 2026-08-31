@@ -30,7 +30,7 @@ Your `edit` permission is denied — file modifications are blocked at the tool 
 @solution-architect   — concrete designs, implementation specs
         │
         ▼
-Implementation Agents (developer-prime, developer-fast, devops-engineer, test-engineer)
+Implementation Agents (@general, devops-engineer, test-engineer)
 ```
 
 - You **receive** from @principal-architect: problem statement, constraints, acceptable solution space, relevant ADRs
@@ -167,7 +167,7 @@ When producing a solution spec, always structure output as:
 - **@principal-architect**: Escalate scope conflicts, constraint violations, cross-cutting decisions, new ADR requirements
 - **@ui-ux-designer**: Hand off UI contract specs, API response shapes, WebSocket event schemas
 - **@database-architect**: Coordinate on schema designs and data access patterns within your specs
-- **Implementation agents** (@developer-prime, @developer-fast, @devops-engineer, @test-engineer): Direct handoff of complete, unambiguous specs
+- **Implementation agents** (@general, @devops-engineer, @test-engineer): Direct handoff of complete, unambiguous specs
 
 ---
 

@@ -12,6 +12,9 @@ from pathlib import Path
 
 Finding = dict[str, str | int]
 
+# Built-in opencode subagents — valid @references without agents/<name>.md
+BUILTIN_AGENTS = {"general", "explore", "scout"}
+
 
 def parse_frontmatter(fm_text: str) -> dict:
     """Parse YAML frontmatter using only re and string operations.
@@ -504,7 +507,7 @@ def cross_reference(repo: Path, findings: list[Finding]) -> None:
         all_md_content.append((content, md_file))
 
     # -- 1. @agent-name mentions across all .md files --
-    agent_allowlist = {"explore"}
+    agent_allowlist = BUILTIN_AGENTS
 
     for content, md_file in all_md_content:
         for agent_name, line_num in find_agent_mentions(content):
@@ -635,8 +638,8 @@ def roster_consistency(repo: Path, findings: list[Finding]) -> None:
     for name in agents_table_names:
         agent_file = agents_dir / f"{name}.md"
         if not agent_file.exists():
-            # Check if it's the @explore built-in
-            if name != "explore":
+            # Check if it's an opencode built-in subagent
+            if name not in BUILTIN_AGENTS:
                 _add_finding(
                     findings, "E", agents_md, 1,
                     f"Agents table lists `{name}` but agents/{name}.md does not exist"

@@ -192,7 +192,8 @@ key decision was made.
 
 The feature name was confirmed in Step 1. Write the complete plan to
 `.opencode/plans/<feature-name>.md`. Writing the plan file is mandatory —
-never skip this step. Get the help from `@developer-fast` to write the plan.
+never skip this step. Get the help from the built-in `@general` subagent to
+write the plan.
 
 ---
 
