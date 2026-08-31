@@ -136,7 +136,7 @@ make_remote() {
   [[ "$output" != *"latest release"* ]]
 }
 
-@test "STALE-05: a clone behind main warns with the update command" {
+@test "STALE-05: a clone behind a newer release warns with the update command" {
   cd "$TDIR"
   run bash "$BATS_TEST_DIRNAME/../install.sh"
   [ "$status" -eq 0 ]
@@ -146,7 +146,9 @@ make_remote() {
   printf '# third\n' >> "$TDIR/advance/agents/a.md"
   git -C "$TDIR/advance" add .
   git -C "$TDIR/advance" commit -qm 'main update'
-  git -C "$TDIR/advance" push -q origin main
+  # newer release tag: warns whether or not the shallow clone carried tags (exact/nearest path) or not (head-vs-main fallback)
+  git -C "$TDIR/advance" tag v1.2.0
+  git -C "$TDIR/advance" push -q origin main v1.2.0
   run bash "$BATS_TEST_DIRNAME/../install.sh"
   [ "$status" -eq 0 ]
   [[ "$output" == *"behind"* ]]
