@@ -44,7 +44,30 @@ CNT_WARNED=0
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 usage() {
-  sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+  cat <<'EOF'
+
+agent-tools — global installer for opencode
+
+Symlinks this repo's agents/, commands/, skills/, and AGENTS.md into your
+opencode global config (~/.config/opencode/), making them available in every
+project. Works on macOS, Linux, and WSL.
+
+Usage:
+  curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/main/install.sh | bash
+  ./install.sh [options]
+
+Options:
+  --source <path>    Use an existing repo checkout instead of cloning
+  --version <tag>    Install or move the clone to a release tag (e.g. v1.1.0)
+  --clone-dir <path> Where to clone (default: ~/.local/share/agent-tools)
+  --force            Overwrite existing files/symlinks in the target
+  --update           git pull the clone, then re-link (picks up new files)
+  --uninstall        Remove the symlinks created by this tool
+  --dry-run          Show what would happen without making changes
+  --local            Install into the current project's .opencode/ instead of globally
+  -h, --help         Show this help
+
+EOF
 }
 
 # --- args ---
@@ -58,7 +81,7 @@ while [ $# -gt 0 ]; do
     --update)    UPDATE=1; shift ;;
     --dry-run)   DRY_RUN=1; shift ;;
     --local)     LOCAL=1; shift ;;
-    -h|--help)   usage; exit 0 ;;
+    -h|--help)   usage || die "failed to print help"; exit 0 ;;
     *) die "unknown option: $1 (try --help)" ;;
   esac
 done

@@ -256,6 +256,16 @@ teardown() {
   [[ "$output" == *"--local"* ]]
 }
 
+# ── INST-14b: --help works when piped (curl | bash path) ─────────────────
+
+@test "INST-14b: --help works when piped (curl | bash path)" {
+  run bash -s -- --help < "$BATS_TEST_DIRNAME/../install.sh"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"Usage:"* ]]
+  [[ "$output" == *"--local"* ]]
+  [[ "$output" != *"sed:"* ]]
+}
+
 # ── INST-15: XDG override ────────────────────────────────────────────────
 
 @test "INST-15: XDG override — XDG_CONFIG_HOME set to custom path, symlinks go there" {
