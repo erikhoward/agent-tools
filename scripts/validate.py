@@ -12,8 +12,8 @@ from pathlib import Path
 
 Finding = dict[str, str | int]
 
-# Built-in opencode subagents — valid @references without agents/<name>.md
-BUILTIN_AGENTS = {"general", "explore", "scout"}
+# Built-in opencode agents — valid references without agents/<name>.md
+BUILTIN_AGENTS = {"build", "plan", "general", "explore", "scout"}
 
 
 def parse_frontmatter(fm_text: str) -> dict:
@@ -418,7 +418,7 @@ def validate_commands(repo: Path, findings: list[Finding]) -> None:
         else:
             agent_ref = fm["agent"]
             agent_file = repo / "agents" / f"{agent_ref}.md"
-            if not agent_file.exists():
+            if not agent_file.exists() and agent_ref not in BUILTIN_AGENTS:
                 _add_finding(findings, "E", md_file, _find_key_line(content, "agent"),
                              f"agent reference `{agent_ref}` does not resolve to an existing file")
 

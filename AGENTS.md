@@ -63,8 +63,6 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 
 | Agent | Role |
 |---|---|
-| `build` | Orchestrator — runs `/flow-implement`, `/flow-ideate`; decomposes, delegates, verifies |
-| `plan` | Orchestrator — runs `/flow-plan`; clarifies, consults, produces the plan |
 | `principal-architect` | Tier 2 — system strategy, cross-service architecture |
 | `solution-architect` | Tier 2 — concrete service designs, cross-component interfaces |
 | `database-architect` | Tier 2 — data modelling, schema, migrations |
@@ -73,9 +71,10 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 | `devops-engineer`, `test-engineer` | Tier 1 analysts during planning; implementers during execution |
 | `@general`, `@explore` | Built-in opencode subagents — not custom agents from this repo. `@general` is the implementation delegate for the flow workflows |
 
-`build` and `plan` are the workflow orchestrators. Tier 2 consultants operate
-**Think → Advise → Review**; Tier 1 analysts produce blueprints in parallel.
-See `flow-plan` for the full tier model.
+The flow workflows are orchestrated by opencode's built-in `build` and `plan`
+primary agents, driven by the `flow-*` skills — no custom orchestrator agents.
+Tier 2 consultants operate **Think → Advise → Review**; Tier 1 analysts
+produce blueprints in parallel. See `flow-plan` for the full tier model.
 
 ## Model Strategy
 
@@ -87,10 +86,9 @@ Commands may override the agent's model for workflow-specific optimization.
 
 | Tier | Model | Rationale |
 |---|---|---|
-| Orchestrators (build, plan) | Explicit (glm-5.1 / glm-5.2) | Workflow owners, fixed reasoning level |
-| Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above orchestrator for deeper analysis |
-| Implementation (`@general`) | Inherited (built-in subagent) | Uses the invoker's model — no pinned gateway model, no gateway output caps |
+| Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above the orchestrator for deeper analysis |
 | Tier 1 analysts | Inherited (no explicit model) | Context-adaptive — benefits from invoker's model |
+| Orchestration (built-in build/plan, `@general`) | Inherited | Session model — no pinned gateway models, no gateway output caps |
 | Commands | May override agent model | Workflow-specific optimization (e.g., /flow-plan → claude-opus-5) |
 
 ### Commands (`commands/`)

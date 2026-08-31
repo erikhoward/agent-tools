@@ -15,11 +15,11 @@ See [CHANGELOG.md](CHANGELOG.md) for release history, or the [GitHub Releases](h
 
 ## What's Included
 
-**13 agents**, **6 commands**, **13 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
+**9 agents**, **6 commands**, **13 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
 
 | Type | Count | Purpose |
 |---|---|---|
-| Agents | 13 | Orchestrators, consultants, analysts, coders |
+| Agents | 9 | Tier 2 consultants and Tier 1 analysts — orchestration runs on opencode's built-in `build`/`plan` agents, driven by the `flow-*` skills |
 | Commands | 6 | `/flow-ideate`, `/flow-plan`, `/flow-implement`, `/git-commit`, `/git-push`, `/git-commit-push` |
 | Skills | 13 | Clean-code & writing (solid, bare-bones), language conventions (go, python, rust, typescript), workflow guides (flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
 
@@ -111,7 +111,7 @@ bats test/
   - `commands/*.md`      → `~/.config/opencode/commands/`
   - `skills/<name>/`     → `~/.config/opencode/skills/<name>/`  (whole dirs, so `references/` come along)
   - `AGENTS.md`          → `~/.config/opencode/AGENTS.md`  (global rules — see note below)
-- `build` and `plan` **override opencode's built-in primary agents** by design, so `/flow-implement` and `/flow-plan` run these orchestrators.
+- The flow commands (`/flow-implement`, `/flow-plan`, `/flow-ideate`) run on opencode's **built-in `build` and `plan` primary agents**, driven by the `flow-*` skills. No orchestrator files are installed — only the specialists.
 
 ### Update
 
@@ -146,7 +146,7 @@ Use [WSL](https://opencode.ai/docs/windows-wsl) — opencode's own recommended p
 
 ## Why a symlink script, not a marketplace
 
-Community marketplaces (e.g. `opencode-marketplace`) namespace files on install (`build.md` → `agent-tools--build.md`). That defeats the core purpose here: `build.md` and `plan.md` must keep their exact names to **override opencode's built-in agents**. Symlinking preserves filenames and lets you update with a plain `git pull`.
+Community marketplaces (e.g. `opencode-marketplace`) namespace files on install (`go/SKILL.md` → `agent-tools--go/SKILL.md`), which breaks skill directory structure and cross-references. Symlinking preserves the exact layout (including `references/` directories) and lets you update with a plain `git pull`.
 
 ## Notes
 
