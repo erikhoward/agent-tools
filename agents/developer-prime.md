@@ -81,6 +81,13 @@ verification steps — before declaring the task complete.
 - For very large tasks, break work into logical checkpoints and summarise progress
 - Never truncate or skip implementation steps due to context pressure — raise it explicitly
 
+### Output Discipline
+- Prefer a new file over rewriting a large existing file — put append-style additions in their own file when practical
+- Never emit a single write above roughly 300–400 lines — split it into multiple operations
+- Prefer surgical edits (targeted replacements) over full-file rewrites
+- If a step needs more output than one response can hold, stop, split the work, and proceed in smaller steps — never attempt one mega tool call
+- A single oversized write gets truncated mid-stream and discarded — output caps apply per response
+
 ---
 
 ## Working Principles
