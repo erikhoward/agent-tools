@@ -4,6 +4,8 @@ agent: build
 model: opencode/claude-fable-5
 ---
 
+Concept name: $1
+
 Try to make the better idea with the user. Load the `flow-ideate` skill before proceeding.
 
 Two modes — detect which one the user is in:
@@ -11,5 +13,3 @@ Two modes — detect which one the user is in:
 - **Refinement**: they bring an existing thing (feature, code, document, prior concept) to evaluate and improve.
 
 If the user names an existing concept, read `.opencode/concepts/<name>.md` and resume it from its Open Questions.
-
-$1
