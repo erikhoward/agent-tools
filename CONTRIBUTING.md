@@ -9,7 +9,7 @@ PRs are welcome. This repo ships opencode configuration (agents, commands, skill
 - Optional: `model` (`org/model-name`), `permission` (nested map with `allow`/`ask`/`deny` values)
 
 **Commands** (`commands/*.md`):
-- Required: `description` (non-empty), `agent` (must reference `agents/<name>.md`)
+- Required: `description` (non-empty), `agent` (must reference `agents/<name>.md` or a built-in opencode agent: `build`, `plan`, `general`, `explore`, `scout`)
 - Optional: `model`
 
 **Skills** (`skills/*/SKILL.md`):
@@ -18,14 +18,13 @@ PRs are welcome. This repo ships opencode configuration (agents, commands, skill
 
 ## Filename Constraints
 
-- `build.md` and `plan.md` filenames are load-bearing — opencode commands reference them by name. Do not rename.
 - Skill directory names must match the `name` field in SKILL.md frontmatter.
 - Agent filenames are referenced by commands via the `agent:` field.
 
 ## Tier Model for New Agents
 
-- **Orchestrators** (build, plan): Explicit `model:` field — workflow owners with fixed reasoning level.
-- **Tier 2 consultants**: Explicit `model:` field — one reasoning step above orchestrator for deeper analysis.
+- **Orchestration**: runs on opencode's built-in `build`/`plan` primary agents, driven by the `flow-*` skills — no custom orchestrator agents.
+- **Tier 2 consultants**: Explicit `model:` field — one reasoning step above the orchestrator for deeper analysis.
 - **Tier 1 analysts**: Inherit `model:` from session / invoker — context-adaptive model inheritance.
 - See AGENTS.md Model Strategy for details.
 

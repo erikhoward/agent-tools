@@ -233,6 +233,15 @@ class TestValidateCommands(RepoTestCase):
         self.assertIn("does not resolve", findings[0]["message"])
         self.assertIn("ghost", findings[0]["message"])
 
+    def test_builtin_agent_reference_produces_no_findings(self):
+        self.write(
+            "commands/c.md",
+            "---\ndescription: runs a thing\nagent: build\n---\n# c\n",
+        )
+        findings = []
+        validate.validate_commands(self.repo, findings)
+        self.assertEqual(findings, [])
+
     def test_valid_command_produces_no_findings(self):
         self.write("agents/worker.md", "# worker\n")
         self.write(
