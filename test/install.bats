@@ -137,14 +137,17 @@ teardown() {
   # ensure the opencode target dir exists
   mkdir -p "$XDG_CONFIG_HOME/opencode"
 
-  # create a real file at the target
-  real_target="$XDG_CONFIG_HOME/opencode/AGENTS.real.md"
-  printf 'real content\n' > "$real_target"
+  # create a real file at the actual target where AGENTS.md would go
+  printf 'real content\n' > "$XDG_CONFIG_HOME/opencode/AGENTS.md"
 
   run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$TDIR/source" --force
   [ "$status" -eq 0 ]
-  # the real file should now be a symlink
+  # the real file should have been replaced by a symlink
   [ -L "$XDG_CONFIG_HOME/opencode/AGENTS.md" ]
+  # ...pointing at the source AGENTS.md
+  # install.sh resolves paths physically (on macOS /tmp -> /private/tmp)
+  expected="$(cd -P "$TDIR/source" && pwd -P)/AGENTS.md"
+  [ "$(readlink "$XDG_CONFIG_HOME/opencode/AGENTS.md")" = "$expected" ]
 }
 
 # ── INST-07: --force overwrites foreign symlink ───────────────────────────
