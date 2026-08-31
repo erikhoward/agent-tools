@@ -12,6 +12,7 @@
 #
 # Options:
 #   --source <path>    Use an existing repo checkout instead of cloning
+#   --version <tag>    Install or move the clone to a release tag (e.g. v1.1.0)
 #   --clone-dir <path> Where to clone (default: ~/.local/share/agent-tools)
 #   --force            Overwrite existing files/symlinks in the target
 #   --update           git pull the clone, then re-link (picks up new files)
@@ -24,9 +25,11 @@ set -uo pipefail
 # Note: we use per-command `|| die` instead of `set -e` so we can provide
 # custom error messages with context. pipefail catches silent pipe failures.
 
-REPO_URL="https://github.com/erikhoward/agent-tools.git"
+# overridable for tests
+REPO_URL="${AGENT_TOOLS_REPO_URL:-https://github.com/erikhoward/agent-tools.git}"
 CLONE_DIR="${HOME}/.local/share/agent-tools"
 SOURCE_DIR=""
+VERSION=""
 FORCE=0
 UNINSTALL=0
 UPDATE=0
@@ -48,6 +51,7 @@ usage() {
 while [ $# -gt 0 ]; do
   case "$1" in
     --source)    SOURCE_DIR="${2:-}"; shift 2; [ -n "$SOURCE_DIR" ] || die "--source requires a path argument" ;;
+    --version)   VERSION="${2:-}"; shift 2; [ -n "$VERSION" ] || die "--version requires a tag argument (e.g. v1.1.0)" ;;
     --clone-dir) CLONE_DIR="${2:-}"; shift 2; [ -n "$CLONE_DIR" ] || die "--clone-dir requires a path argument" ;;
     --force)     FORCE=1; shift ;;
     --uninstall) UNINSTALL=1; shift ;;
@@ -58,6 +62,12 @@ while [ $# -gt 0 ]; do
     *) die "unknown option: $1 (try --help)" ;;
   esac
 done
+
+case "$VERSION" in
+  v[0-9]*) ;;
+  *) [ -n "$VERSION" ] && die "--version expects a release tag like v1.1.0, got: $VERSION" ;;
+esac
+[ -n "$VERSION" ] && [ -n "$SOURCE_DIR" ] && die "--version pins a clone from the remote; it cannot be combined with --source"
 
 # --- config target (XDG-aware) ---
 XDG_CONFIG_HOME="${XDG_CONFIG_HOME:-${HOME}/.config}"
@@ -143,11 +153,18 @@ resolve_source() {
     [ -d "$SOURCE_DIR/.git" ] || die "clone not found at $SOURCE_DIR. Pass --source <path> to target your checkout."
   elif [ ! -d "$SOURCE_DIR/.git" ]; then
     printf 'Cloning %s -> %s\n' "$REPO_URL" "$SOURCE_DIR"
-    do_git clone --depth 1 "$REPO_URL" "$SOURCE_DIR"
+    if [ -n "$VERSION" ]; then
+      do_git clone --depth 1 --branch "$VERSION" "$REPO_URL" "$SOURCE_DIR"
+    else
+      do_git clone --depth 1 "$REPO_URL" "$SOURCE_DIR"
+    fi
     if [ "$DRY_RUN" -eq 1 ]; then
       printf '  (dry-run: clone skipped, cannot verify checkout)\n'
       return 0
     fi
+  elif [ -n "$VERSION" ]; then
+    do_git -C "$SOURCE_DIR" fetch --tags "$REPO_URL"
+    do_git -C "$SOURCE_DIR" checkout --detach "$VERSION"
   fi
   is_repo "$SOURCE_DIR" || die "not a valid agent-tools checkout: $SOURCE_DIR"
   printf 'Source (cloned): %s\n' "$SOURCE_DIR"
@@ -270,6 +287,47 @@ summary() {
   printf 'Source:  %s\n' "$SOURCE_DIR"
 }
 
+check_stale() {
+  local tags latest exact nearest main_sha head local_release sorted
+  git -C "$SOURCE_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 || return 0
+
+  tags="$(git ls-remote --tags "$REPO_URL" 2>/dev/null | sed '/\^{}$/d; s#.*refs/tags/##' | sed -n -E '/^v[0-9]+\.[0-9]+\.[0-9]+$/s/^v//p' | sort -t . -k 1,1n -k 2,2n -k 3,3n)"
+  if [ -z "$tags" ]; then
+    printf 'note: could not check for newer releases\n' >&2
+    return 0
+  fi
+  latest="v$(printf '%s\n' "$tags" | tail -1)"
+  exact="$(git -C "$SOURCE_DIR" describe --tags --exact-match HEAD 2>/dev/null)"
+  [ "$exact" = "$latest" ] && return 0
+  nearest="$(git -C "$SOURCE_DIR" describe --tags --abbrev=0 2>/dev/null)"
+  [ "$nearest" = "$latest" ] && return 0
+
+  if [ -z "$exact" ] && [ -z "$nearest" ]; then
+    head="$(git -C "$SOURCE_DIR" rev-parse HEAD 2>/dev/null)"
+    main_sha="$(git ls-remote "$REPO_URL" main 2>/dev/null | awk 'NR == 1 {print $1}')"
+    [ -n "$main_sha" ] && [ "$head" = "$main_sha" ] && return 0
+    if [ -n "$main_sha" ]; then
+      printf 'WARN: clone is behind the remote main — run ./install.sh --update\n' >&2
+    fi
+    return 0
+  fi
+
+  local_release="$exact"
+  [ -n "$local_release" ] || local_release="$nearest"
+  sorted="$(printf '%s\n%s\n' "$local_release" "$latest" | sed 's/^v//' | sort -t . -k 1,1n -k 2,2n -k 3,3n | tail -1)"
+  [ "$sorted" = "${latest#v}" ] || return 0
+  if ! git -C "$SOURCE_DIR" symbolic-ref -q HEAD >/dev/null 2>&1; then
+    printf 'WARN: pinned clone is at %s; the latest release is %s — re-run with --version %s to move\n' "$local_release" "$latest" "$latest" >&2
+  else
+    printf 'WARN: clone is behind the latest release (have %s, latest %s) — run ./install.sh --update\n' "$local_release" "$latest" >&2
+  fi
+}
+
+is_detached() {
+  git -C "$SOURCE_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1 &&
+    ! git -C "$SOURCE_DIR" symbolic-ref -q HEAD >/dev/null 2>&1
+}
+
 # --- local mode: target selection (R3) ---
 # Local mode principle: on the project's turf, this tool only adds or removes
 # what it created; anything else — warn, skip, or die, never delete.
@@ -293,10 +351,26 @@ fi
 resolve_source
 
 if [ "$UPDATE" -eq 1 ]; then
-  printf 'Updating clone...\n'
-  do_git -C "$SOURCE_DIR" pull --ff-only
+  if [ -n "$VERSION" ]; then
+    printf 'Pinning clone to %s...\n' "$VERSION"
+    do_git -C "$SOURCE_DIR" fetch --tags "$REPO_URL"
+    do_git -C "$SOURCE_DIR" checkout --detach "$VERSION"
+  elif is_detached; then
+    printf 'note: clone is pinned at %s; to move to a newer release re-run with --version <tag>\n' "$(git -C "$SOURCE_DIR" describe --tags --exact-match 2>/dev/null)" >&2
+  else
+    printf 'Updating clone...\n'
+    do_git -C "$SOURCE_DIR" pull --ff-only
+  fi
   FORCE=1
 fi
+
+if [ -n "$VERSION" ]; then
+  FORCE=1
+elif is_detached; then
+  FORCE=1
+fi
+
+check_stale
 
 printf 'Installing agent-tools into %s\n' "$TARGET_DIR"
 install_all
@@ -320,7 +394,11 @@ if [ "$LOCAL" -eq 1 ]; then
   printf '  - Update later:   ./install.sh --update --local   (run from inside the project)\n'
   printf '  - Uninstall:      ./install.sh --uninstall --local   (run from inside the project)\n'
 else
-  printf '  - Update later:   ./install.sh --update   (or: cd %s && git pull)\n' "$SOURCE_DIR"
+  if [ -n "$VERSION" ] || is_detached; then
+    printf '  - Move to a newer release: ./install.sh --version <tag>\n'
+  else
+    printf '  - Update later:   ./install.sh --update   (or: cd %s && git pull)\n' "$SOURCE_DIR"
+  fi
   printf '  - Uninstall:      ./install.sh --uninstall\n'
 fi
 if [ "$DRY_RUN" -eq 1 ]; then printf '\n(dry-run: no changes were made)\n'; fi
