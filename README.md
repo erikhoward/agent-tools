@@ -30,7 +30,7 @@ Makes everything available in every opencode project by symlinking into `~/.conf
 ```sh
 curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/main/install.sh | bash
 ```
-> **Security tip:** The one-liner above fetches from `main`, which can run ahead of the latest tagged release. For production use, pin to a release tag — see the [GitHub Releases](https://github.com/erikhoward/agent-tools/releases) page for current tags. Or use the `--source` alternative below to review the code before running.
+> **Security tip:** The one-liner above fetches from `main`, which can run ahead of the latest tagged release. For production use, pin the fetched URL to a tag and pass the same tag to the script: `curl -fsSL https://raw.githubusercontent.com/erikhoward/agent-tools/v<tag>/install.sh | bash -s -- --version v<tag>`. See the [GitHub Releases](https://github.com/erikhoward/agent-tools/releases) page for current tags. Or use the `--source` alternative below to review the code before running.
 
 Or, from a clone:
 
@@ -89,6 +89,8 @@ Run it from inside the project. It removes only the symlinks this tool created. 
 bash ~/.local/share/agent-tools/install.sh --update --local   # git pull + re-link
 ```
 
+Installs warn when the clone is behind the latest release. Pinned installs move by re-running with a newer `--version`.
+
 ## Local Development
 
 ```bash
@@ -131,6 +133,7 @@ cd ~/.local/share/agent-tools && git pull   # symlinks follow automatically
 |---|---|
 | `--local` | Install into the current project's `.opencode/` instead of the global config |
 | `--source <path>` | Use an existing checkout instead of cloning |
+| `--version <tag>` | Install or move the clone to a release tag |
 | `--clone-dir <path>` | Where to clone (default `~/.local/share/agent-tools`) |
 | `--force` | Overwrite existing files/symlinks in the target |
 | `--update` | `git pull` the clone, then re-link |
