@@ -1,6 +1,7 @@
 ---
 description: Commit staged changes, then push — runs both workflows in sequence
 agent: build
+subtask: true
 ---
 
 # Commit staged changes, then push them to the remote

@@ -1,6 +1,7 @@
 ---
 description: Commit staged changes with a conventional commit message
 agent: build
+subtask: true
 ---
 
 # Commit staged changes using Conventional Commits 1.0.0

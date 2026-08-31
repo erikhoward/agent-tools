@@ -1,6 +1,7 @@
 ---
 description: Push committed changes to remote — never stages or commits anything
 agent: build
+subtask: true
 ---
 
 # Push the committed (but not yet pushed) changes to the remote repository
