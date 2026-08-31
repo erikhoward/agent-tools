@@ -152,7 +152,7 @@ When producing a data spec, structure output as:
 - **@solution-architect**: Hand off complete data specs for inclusion in implementation briefs
 - **@security-expert**: Consult on encryption at rest, column-level encryption, PII handling, and audit logging requirements
 - **@performance-engineer**: Coordinate on query optimization, index tuning, and caching layer design
-- **@developer-prime** / **@developer-fast**: Provide query patterns and ORM guidance to the implementers — never let implementation agents design schemas themselves
+- **@general**: Provide query patterns and ORM guidance to the implementer — never let implementation agents design schemas themselves
 
 ---
 

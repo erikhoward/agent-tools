@@ -45,7 +45,7 @@ agent does not write code — it orchestrates. Its responsibilities are:
 
 - Read and deeply understand the plan in `.opencode/plans/`
 - Decompose the plan into atomic implementation tasks
-- Delegate tasks to `developer-prime` and `developer-fast`
+- Delegate tasks to the built-in `general` subagent
 - Escalate to consultants the moment anything is unclear, blocked, or risky
 - Verify quality gates and ensure all tests pass before closing
 
@@ -89,10 +89,11 @@ Register all tasks in TodoWrite immediately. Rules:
 Assign implementation tasks to the appropriate coder agent and run independent
 tasks in parallel:
 
+### Assign implementation tasks to the built-in `general` subagent
+
 | Task type | Assigned agent |
 |---|---|
-| Complex, multi-file, or long-context work | `developer-prime` |
-| Scoped, single-file, boilerplate, or high-volume tasks | `developer-fast` |
+| Any implementation task | `general` (built-in opencode subagent) |
 
 Run all independent tasks simultaneously. Never serialise work that can be
 parallelised.
@@ -226,7 +227,7 @@ Address every finding before moving to testing.
 ## Step 7 — Testing and Validation
 
 Run the project's full test suite. If tests are missing for new code, delegate
-to `developer-fast` to add them per the testing strategy defined in the plan.
+to the built-in `@general` subagent to add them per the testing strategy defined in the plan.
 All tests must pass before the workflow closes. No exceptions.
 
 ---
@@ -271,7 +272,7 @@ Present a concise summary covering:
 - **Pass style context in the task prompt.** Skills don't cross agent boundaries — tell each coder agent which skills to load.
 - **Use the task prompt template.** Never delegate with a vague description — include task, context, files, consultation outputs, and success criteria.
 - **Verify each task before moving on.** Run tests, type-check, and lint after every task. Do not accumulate failures.
-- **Delegate to developer-prime and developer-fast.** These are the two coder agents in this workflow.
+- **Delegate to the built-in `general` subagent.** It is the coder in this workflow — dispatch sizing and per-task verification control complexity, not agent choice.
 - **Cap dispatch size.** Never bundle more than 2-3 plan steps into a single task dispatch. Split large plans across multiple dispatches.
 - **Consult immediately when blocked.** principal-architect, solution-architect, database-architect, and security-expert are on call for Think → Advise → Review.
 - **Parallel by default.** Never run independent tasks or consultations sequentially.
@@ -294,8 +295,7 @@ Present a concise summary covering:
 
 | Agent | Specialty |
 |---|---|
-| `developer-prime` | Complex, multi-file, long-context, and frontend tasks |
-| `developer-fast` | Scoped, single-file, boilerplate, and high-volume tasks |
+| `general` | Built-in opencode subagent — all implementation tasks |
 
 ### Consultants (Think → Advise → Review — read-only, no code changes)
 
@@ -322,8 +322,7 @@ Decompose into atomic tasks (TodoWrite)
     ▼
 For each task:
     Check repo skills → include "load <skill>" in task prompt → delegate
-    ├── developer-prime  (complex / multi-file)
-    └── developer-fast   (scoped / single-file)
+    ├── @general         (built-in subagent, parallel dispatches)
     │
     ▼ (after each task)
 Per-task verification: tests → type-check → lint → mark completed

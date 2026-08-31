@@ -385,6 +385,12 @@ class TestCrossReference(RepoTestCase):
         validate.cross_reference(self.repo, findings)
         self.assertEqual(findings, [])
 
+    def test_allowlisted_general_mention_produces_no_finding(self):
+        self.write("docs/note.md", "Delegate the task to @general.\n")
+        findings = []
+        validate.cross_reference(self.repo, findings)
+        self.assertEqual(findings, [])
+
     def test_unresolved_skill_mention_is_warning(self):
         note = self.write("docs/note.md", "Load the `go` skill first.\n")
         findings = []

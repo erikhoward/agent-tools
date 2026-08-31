@@ -281,7 +281,7 @@ When your findings warrant another perspective, say so in your output — recomm
 - **@principal-architect**: Architectural security, secure design patterns, threat modeling
 - **@devops-engineer**: Infrastructure security, secrets management, container security, network security
 - **@test-engineer**: Security testing strategies, fuzzing, penetration testing
-- **@developer-prime** / **@developer-fast**: The implementers who apply your recommended fixes
+- **@general**: The implementer who applies your recommended fixes (built-in opencode subagent)
 - **/flow-ideate**: When standard security patterns feel insufficient — suggest an ideation session to challenge assumptions or explore novel defensive strategies
 
 ## Focus Areas

@@ -25,8 +25,7 @@ Design and YAGNI; load it for any coding or review task.
 
 Touch only what you must. Don't refactor adjacent code, match existing style,
 and remove only the orphans your own changes create. Every changed line
-should trace to the request. `developer-fast` enforces minimal-context,
-minimal-change discipline; `solid` covers clean-code structure.
+should trace to the request. `solid` covers clean-code structure.
 
 ## 4. Goal-Driven Execution
 
@@ -66,15 +65,13 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 |---|---|
 | `build` | Orchestrator — runs `/flow-implement`, `/flow-ideate`; decomposes, delegates, verifies |
 | `plan` | Orchestrator — runs `/flow-plan`; clarifies, consults, produces the plan |
-| `developer-prime` | Complex, multi-file, long-context, frontend implementation |
-| `developer-fast` | Scoped, single-file, boilerplate, high-volume implementation |
 | `principal-architect` | Tier 2 — system strategy, cross-service architecture |
 | `solution-architect` | Tier 2 — concrete service designs, cross-component interfaces |
 | `database-architect` | Tier 2 — data modelling, schema, migrations |
 | `security-expert` | Tier 2 — threat modelling, auth, secure coding |
 | `code-analyst`, `performance-engineer`, `ui-ux-designer` | Tier 1 analysts — read-only, blueprints |
 | `devops-engineer`, `test-engineer` | Tier 1 analysts during planning; implementers during execution |
-| `@explore` | Built-in opencode subagent — not a custom agent from this repo |
+| `@general`, `@explore` | Built-in opencode subagents — not custom agents from this repo. `@general` is the implementation delegate for the flow workflows |
 
 `build` and `plan` are the workflow orchestrators. Tier 2 consultants operate
 **Think → Advise → Review**; Tier 1 analysts produce blueprints in parallel.
@@ -82,7 +79,7 @@ See `flow-plan` for the full tier model.
 
 ## Model Strategy
 
-Agents without an explicit `model:` field inherit the session default / invoker's model. This is intentional — Tier 1 analysts benefit from context-adaptive model inheritance.
+Agents without an explicit `model:` field inherit the session default / invoker's model. This is intentional — Tier 1 analysts and the built-in `@general` subagent benefit from context-adaptive model inheritance.
 
 Tier 2 consultants have explicit models to ensure a reasoning step above the orchestrator.
 
@@ -92,7 +89,7 @@ Commands may override the agent's model for workflow-specific optimization.
 |---|---|---|
 | Orchestrators (build, plan) | Explicit (glm-5.1 / glm-5.2) | Workflow owners, fixed reasoning level |
 | Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above orchestrator for deeper analysis |
-| Implementation agents | Explicit (gpt-5.6-luna / deepseek-v4-flash) | Complex implementer uses reasoning-tier model; fast implementer uses lightweight model for speed |
+| Implementation (`@general`) | Inherited (built-in subagent) | Uses the invoker's model — no pinned gateway model, no gateway output caps |
 | Tier 1 analysts | Inherited (no explicit model) | Context-adaptive — benefits from invoker's model |
 | Commands | May override agent model | Workflow-specific optimization (e.g., /flow-plan → claude-opus-5) |
 

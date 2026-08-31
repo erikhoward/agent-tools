@@ -264,7 +264,7 @@ When your analysis warrants another perspective, say so in your output — recom
 - **@principal-architect**: Architectural performance patterns and system design for scalability
 - **@database-architect**: Database query optimization, indexing strategies, query plan analysis
 - **@devops-engineer**: Production monitoring, infrastructure performance, scaling strategies
-- **@developer-prime**: Frontend performance implementation (bundle size, rendering, caching)
+- **@general**: Frontend performance implementation (bundle size, rendering, caching)
 - **/flow-ideate**: When conventional optimization approaches hit a ceiling — suggest an ideation session to challenge assumed constraints
 
 ## Before You Start ANY Performance Analysis
