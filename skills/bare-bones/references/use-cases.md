@@ -104,10 +104,27 @@ Mode: procedural, hard length limits. Buttons and labels are technical names
 (exempt). Body copy follows the rules: "No projects yet. Create a project to
 start." Nothing else survives at this length anyway.
 
-## Where STE does not fit
+## Blog posts and essays
 
-Marketing pages, launch posts, blog voice, brand writing. STE deletes persuasion
-on purpose. Write those in your own voice — then use STE for the docs the landing
-page links to.
+Mode: general. The writer's voice is the product. Remove the patterns and
+banned words from `../SKILL.md`; keep the vocabulary, cadence, and opinions
+that make the piece sound like one person. Cutting stays proportional to the
+slop. Keep a personal aside that creates context or character; cut generic
+throat-clearing. Contractions and fragments are legal here.
 
-Adapted from [wilmai/ste](https://github.com/wilmai/ste) (MIT).
+## Email and announcements
+
+Mode: general, with the shared precision rules for facts. Kill hype and
+hedging; keep every date, number, and deadline. "We're excited to announce
+that our revolutionary new dashboard represents a paradigm shift in
+observability" becomes "The new dashboard is live. It shows deploy frequency
+and error rate on one screen."
+
+## Launch posts and marketing pages
+
+Mode: general. Persuasion is allowed — claim quality only with evidence.
+Replace "blazing-fast" with the measurement. The docs the post links to stay
+in Technical mode.
+
+Adapted from [wilmai/ste](https://github.com/wilmai/ste) and
+[petergyang/no-ai-slop](https://github.com/petergyang/no-ai-slop) (both MIT).

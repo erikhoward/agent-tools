@@ -1,7 +1,9 @@
 # Verification Checklist
 
 Mechanical, countable, and judgment checks for a draft, plus a precision audit
-against the source. Core conventions live in `../SKILL.md`.
+against the source. The mechanical, countable, and judgment checks apply to
+Technical mode. General mode has its own checks below. Core conventions live in
+`../SKILL.md`.
 
 ## Mechanical checks (searchable)
 
@@ -72,6 +74,37 @@ Anything dropped goes back in. Anything kept in violation of a rule goes in the
 `What I did not simplify` block, one line per item: the fact, the rule broken,
 the reason. Omit the block when the rewrite is clean.
 
+## General-mode checks (run after the rewrite)
+
+Answer each with pass or fail. Fix the draft before you return it when a check
+fails.
+
+1. **Voice.** Does the edit keep the writer's vocabulary, cadence, bluntness,
+   humor, uncertainty, and digressions?
+2. **Restraint.** Did strong human sentences stay alone — no rewrite for
+   consistency, no forced tidiness?
+3. **Proportion.** Is the cutting proportional to the actual slop, with no
+   aggressive compression that strips character?
+4. **Portability.** Does every generic sentence pass the portability test, or
+   was it cut or made specific to this subject?
+5. **Facts.** Does the edit add no claims, examples, stats, quotes, or
+   opinions, and drop none?
+6. **Edge.** Do strong opinions, blunt language, humor, and honest admissions
+   stay, with no safer rewording?
+7. **Structure.** Do the writer's progression and detours stay, unless the
+   structure hurt the piece?
+8. **Words and patterns.** Are the banned words, empty adverbs, empty phrases,
+   and the patterns from `../SKILL.md` removed — except where the writer's
+   voice earns a keep?
+9. **Recognition.** Would the writer recognize the edited draft as their own?
+10. **Report.** Does the output end with a short What changed section?
+
+## Detect-report checks
+
+- Each pattern found is named, with the offending line quoted and a short fix.
+- The report does not rewrite the draft, score it, or claim AI authorship.
+- The report offers to edit the draft after.
+
 ## When reporting violations (check mode)
 
 For each violation give: the rule number, the offending text, and a compliant
@@ -82,4 +115,5 @@ tool can guarantee ASD-STE100 compliance. Final approval rests with the writer.
 Confirm each rule number against the official standard, a free download at
 asd-ste100.org."
 
-Adapted from [wilmai/ste](https://github.com/wilmai/ste) (MIT).
+Adapted from [wilmai/ste](https://github.com/wilmai/ste) and
+[petergyang/no-ai-slop](https://github.com/petergyang/no-ai-slop) (both MIT).
