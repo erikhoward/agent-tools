@@ -37,8 +37,11 @@ TodoWrite loop; `flow-plan` fixes acceptance criteria up front.
 ## Communication Style
 
 Use the `bare-bones` skill for all documentation and user-facing communication.
-Write in Simplified Technical English: short sentences, active voice, simple
-tenses, one word per meaning. This is on by default.
+Technical output (docs, errors, procedures, reports) follows Simplified
+Technical English: short sentences, active voice, simple tenses, one word per
+meaning. This is on by default. General prose (blog posts, essays, emails,
+announcements) follows the skill's General mode: remove AI-slop patterns, keep
+the writer's voice, make the minimum effective edit.
 
 To turn it off, the user can say "turn off bare-bones", "disable STE", or "stop
 using simplified English". To turn it back on, the user can say "turn on
@@ -53,7 +56,7 @@ Load and follow the relevant skill, agent, or command instead of improvising.
 | Skill | Use for |
 |---|---|
 | `solid` | Any coding/review — SOLID, TDD, clean code, code smells |
-| `bare-bones` | Technical writing in ASD-STE100 Simplified Technical English |
+| `bare-bones` | Plain writing — STE rules for technical prose, voice-preserving AI-slop removal for general prose |
 | `git-commit` | Writing conventional commit messages |
 | `go`, `python`, `rust`, `typescript`, `golangci-lint` | Language-specific conventions + verification |
 | `github`, `git-hooks` | GitHub workflows, hooks |

@@ -105,12 +105,45 @@ Two deliberate calls worth stating rather than hiding:
 Pragmatic mode kept the explanatory rhythm and did not force one fixed term per
 concept. It still cut the marketing adjectives, the semicolon, and the length.
 
+### Example E — Blog paragraph (General mode)
+
+**Before:**
+> Here's the thing about code review: it's not about catching bugs. It's about building shared context. What most people miss: review is a conversation, not a gate — a truth that's easy to forget in the age of CI. Our new bot leverages this insight, automatically surfacing priority threads and fostering a culture of feedback. The result? Faster reviews. Better code. Happier teams. At the end of the day, that's not just a workflow change. It's a paradigm shift.
+
+**Patterns flagged:**
+- Throat-clearing opener ("Here's the thing about")
+- Binary contrast, twice ("it's not about X. It's about Y." and the closer "not just a workflow change. It's a paradigm shift.")
+- Faux-insight setup ("What most people miss:")
+- Empty phrase ("in the age of")
+- Banned words ("leverages", "fostering") and superficial analysis ("fostering a culture of feedback" — a trailing `-ing` clause that pretends to explain)
+- Rhetorical setup plus dramatic fragmentation ("The result? Faster reviews. Better code. Happier teams.")
+- Empty phrase ("At the end of the day")
+
+**After:**
+> Code review builds shared context. Catching bugs is the smaller part of the job. Review works best as a conversation, not a gate, and CI pipelines made that easy to forget. Our new bot flags the review threads that need attention first, which makes feedback a routine part of the day. Reviews get faster, and the code gets better.
+
+Three deliberate calls worth stating rather than hiding:
+- The short declarative rhythm stays. The writer writes in punchy sentences;
+  the stacked fragments went, the cadence did not.
+- "a conversation, not a gate" stays. It is the writer's own phrasing, it is
+  clear, and flattening it to "review works best as a discussion" would trade
+  their voice for the editor's.
+- "Happier teams" was cut, not because it is slop, but because the draft gives
+  no evidence for it. If the writer has evidence, it goes back in — with the
+  number.
+
+**What changed:** throat-clearing, faux-insight setup, and binary contrasts
+cut; banned words replaced with plain verbs ("leverages" → "flags",
+"fostering" → the concrete consequence); stacked fragments joined into one
+sentence; "At the end of the day" cut; unsupported claim dropped and flagged.
+
 ## How to read these examples
 
 Part 1 shows the rules this skill is built on. Part 2 shows the transfer: one
 meaning per word, active voice, simple tense, one instruction per sentence, and
 explicit conditions instead of buried subordinate clauses make
 machine-to-machine and cross-language text safer to parse — not just aircraft
-manuals.
+manuals. Part 3 shows the General mode: the same slop dies, the writer's voice
+survives.
 
-Adapted from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) (MIT).
+Adapted from [danyuchn/asd-ste100-skill](https://github.com/danyuchn/asd-ste100-skill) and [petergyang/no-ai-slop](https://github.com/petergyang/no-ai-slop) (both MIT).

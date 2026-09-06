@@ -21,7 +21,7 @@ See [CHANGELOG.md](CHANGELOG.md) for release history, or the [GitHub Releases](h
 |---|---|---|
 | Agents | 9 | Tier 2 consultants and Tier 1 analysts — orchestration runs on opencode's built-in `build`/`plan` agents, driven by the `flow-*` skills |
 | Commands | 6 | `/flow-ideate`, `/flow-plan`, `/flow-implement`, `/git-commit`, `/git-push`, `/git-commit-push` |
-| Skills | 13 | Clean-code & writing (solid, bare-bones), language conventions (go, python, rust, typescript), workflow guides (flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
+| Skills | 13 | Clean code & plain writing (solid, bare-bones), language conventions (go, python, rust, typescript), workflow guides (flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
 
 ## Install (global)
 
