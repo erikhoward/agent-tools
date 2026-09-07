@@ -1,104 +1,47 @@
 # Agent Guidelines
 
-Behavioural guidelines to reduce common LLM coding mistakes, derived from
+These guidelines address common LLM coding mistakes described in
 [Andrej Karpathy's observations](https://x.com/karpathy/status/2015883857489522876).
-Bias toward caution over speed; for trivial tasks, use judgment. The skills
-and agents in this repo reinforce these principles — defer to them instead of
-restating.
 
-## 1. Think Before Coding
+## Core Contract
 
-Don't assume, don't hide confusion, surface tradeoffs. State assumptions
-explicitly; if multiple interpretations exist, present them; if unclear, stop
-and ask. For anything blocked, risky, or beyond scope, escalate to a
-consultant agent (see roster) rather than guess. `flow-plan` owns the
-clarify-first workflow.
+- Confirm the goal, scope, constraints, and acceptance criteria before changes.
+- State material assumptions. Ask the user when intent or authorization is unclear.
+- Make the smallest correct change. Do not add speculative features, abstractions, compatibility, or error handling.
+- Preserve user and concurrent-agent changes. Touch only assigned files. Stop on a direct ownership conflict.
+- For behavior changes, use a failing behavior test first, then minimal implementation and refactoring. A reviewed plan can set another test order, but verification is never optional.
+- Test observable behavior, not implementation details. Run focused checks, then relevant integration checks. Report checks that were not run.
+- Keep writing terse and factual. Preserve every condition, exception, threshold, version, warning, and source attribution.
 
-## 2. Simplicity First
-
-Minimum code that solves the problem — no features, abstractions,
-flexibility, or error handling beyond what was asked. If 200 lines could be
-50, rewrite. The `solid` skill encodes this as the Four Elements of Simple
-Design and YAGNI; load it for any coding or review task.
-
-## 3. Surgical Changes
-
-Touch only what you must. Don't refactor adjacent code, match existing style,
-and remove only the orphans your own changes create. Every changed line
-should trace to the request. `solid` covers clean-code structure.
-
-## 4. Goal-Driven Execution
-
-Define success criteria and loop until verified: "add validation" → write
-failing tests, then make them pass. For multi-step work, `flow-implement`
-owns the decompose → delegate → per-task verify (tests, type-check, lint) →
-TodoWrite loop; `flow-plan` fixes acceptance criteria up front.
-
-## Communication Style
-
-Use the `bare-bones` skill for all documentation and user-facing communication.
-Technical output (docs, errors, procedures, reports) follows Simplified
-Technical English: short sentences, active voice, simple tenses, one word per
-meaning. This is on by default. General prose (blog posts, essays, emails,
-announcements) follows the skill's General mode: remove AI-slop patterns, keep
-the writer's voice, make the minimum effective edit.
-
-To turn it off, the user can say "turn off bare-bones", "disable STE", or "stop
-using simplified English". To turn it back on, the user can say "turn on
-bare-bones" or "enable STE". When off, write in your default style.
+Fresh workers do not inherit loaded skills or these guidelines. Every dispatch must include the worker role, allowed files, requirements, acceptance criteria, minimal-change rule, test order, required verification, and stop conditions. Give each file one writer. Use bounded parallel batches only for non-overlapping work.
 
 ## Repo Assets
 
-Load and follow the relevant skill, agent, or command instead of improvising.
+Load an asset only when its focused guidance helps the task.
 
-### Skills (`skills/`)
+### Skills
 
-| Skill | Use for |
+| Skill | Scope |
 |---|---|
-| `solid` | Any coding/review — SOLID, TDD, clean code, code smells |
-| `bare-bones` | Plain writing — STE rules for technical prose, voice-preserving AI-slop removal for general prose |
-| `git-commit` | Writing conventional commit messages |
-| `go`, `python`, `rust`, `typescript`, `golangci-lint` | Language-specific conventions + verification |
-| `github`, `git-hooks` | GitHub workflows, hooks |
-| `flow-ideate`, `flow-plan`, `flow-implement` | Ideation → planning → parallel build |
+| `bare-bones` | Clear technical and general writing |
+| `git-commit`, `git-hooks`, `github` | Git and GitHub work |
+| `go`, `python`, `rust`, `typescript`, `golangci-lint` | Language and lint guidance |
+| `flow-ideate`, `flow-plan`, `flow-implement` | Concept, plan, and implementation workflows |
 
-### Agents (`agents/`)
+### Agents
 
-| Agent | Role |
+| Agent | Scope |
 |---|---|
-| `principal-architect` | Tier 2 — system strategy, cross-service architecture |
-| `solution-architect` | Tier 2 — concrete service designs, cross-component interfaces |
-| `database-architect` | Tier 2 — data modelling, schema, migrations |
-| `security-expert` | Tier 2 — threat modelling, auth, secure coding |
-| `code-analyst`, `performance-engineer`, `ui-ux-designer` | Tier 1 analysts — read-only, blueprints |
-| `devops-engineer`, `test-engineer` | Tier 1 analysts during planning; implementers during execution |
-| `@general`, `@explore` | Built-in opencode subagents — not custom agents from this repo. `@general` is the implementation delegate for the flow workflows |
+| `principal-architect` | System and component architecture |
+| `database-architect`, `security-expert` | Data and security consultation |
+| `code-analyst`, `performance-engineer`, `ui-ux-designer` | Read-only analysis |
+| `@general`, `@explore` | Built-in implementation, testing, infrastructure, and exploration workers |
 
-The flow workflows are orchestrated by opencode's built-in `build` and `plan`
-primary agents, driven by the `flow-*` skills — no custom orchestrator agents.
-Tier 2 consultants operate **Think → Advise → Review**; Tier 1 analysts
-produce blueprints in parallel. See `flow-plan` for the full tier model.
+Core design and testing guidance is adapted from [ramziddin/solid-skills](https://github.com/ramziddin/solid-skills) (MIT).
 
-## Model Strategy
-
-Agents without an explicit `model:` field inherit the session default / invoker's model. This is intentional — Tier 1 analysts and the built-in `@general` subagent benefit from context-adaptive model inheritance.
-
-Tier 2 consultants have explicit models to ensure a reasoning step above the orchestrator.
-
-Commands may override the agent's model for workflow-specific optimization.
-
-| Tier | Model | Rationale |
-|---|---|---|
-| Tier 2 consultants | Explicit (glm-5.2) | Reasoning step above the orchestrator for deeper analysis |
-| Tier 1 analysts | Inherited (no explicit model) | Context-adaptive — benefits from invoker's model |
-| Orchestration (built-in build/plan, `@general`) | Inherited | Session model — no pinned gateway models, no gateway output caps |
-| Commands | May override agent model | Workflow-specific optimization (e.g., /flow-plan → claude-opus-5) |
-
-### Commands (`commands/`)
+### Commands
 
 | Command | Action |
 |---|---|
-| `/flow-ideate`, `/flow-plan`, `/flow-implement` | Ideation, planning, parallel build |
-| `/git-commit`, `/git-push`, `/git-commit-push` | Conventional commit, push, both |
-
-
+| `/flow-ideate`, `/flow-plan`, `/flow-implement` | Run a flow workflow |
+| `/git-commit`, `/git-push`, `/git-commit-push` | Commit or push with explicit authorization |

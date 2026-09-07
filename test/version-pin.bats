@@ -2,7 +2,7 @@
 #
 # agent-tools version-pin.bats — release pinning and stale-release tests
 #
-# Tests:  VER-01 through VER-07 and STALE-01 through STALE-05
+# Tests:  VER-01 through VER-09 and STALE-01 through STALE-05
 # Scope:  all tests use isolated mktemp -d fake $HOME with temp XDG_CONFIG_HOME.
 #
 
@@ -30,17 +30,21 @@ teardown() {
 
 make_remote() {
   work="$TDIR/work"
-  mkdir -p "$work/agents" "$work/commands" "$work/skills/s"
+  mkdir -p "$work/agents" "$work/commands" "$work/skills/s" "$work/skills/solid"
   git -C "$work" init -q -b main
   git -C "$work" config user.email test@example.com
   git -C "$work" config user.name test
   printf '# agent\n' > "$work/agents/a.md"
   printf '# command\n' > "$work/commands/c.md"
   printf '# skill\n' > "$work/skills/s/SKILL.md"
+  printf '# retired skill\n' > "$work/skills/solid/SKILL.md"
+  printf '# retired agent\n' > "$work/agents/solution-architect.md"
   printf '# rules\n' > "$work/AGENTS.md"
   git -C "$work" add .
   git -C "$work" commit -qm 'first release'
   git -C "$work" tag v1.0.0
+  rm -rf "$work/skills/solid"
+  rm "$work/agents/solution-architect.md"
   printf '# second\n' >> "$work/agents/a.md"
   git -C "$work" add .
   git -C "$work" commit -qm 'second release'
@@ -98,6 +102,35 @@ make_remote() {
   [ "$status" -eq 0 ]
   [ "$(git -C "$HOME/.local/share/agent-tools" describe --tags --exact-match HEAD)" = "v1.0.0" ]
   [[ "$output" == *"pinned"* ]]
+}
+
+@test "VER-08: an old selected release keeps retired assets until a newer release removes them" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --version v1.0.0
+  [ "$status" -eq 0 ]
+  [ -L "$XDG_CONFIG_HOME/opencode/skills/solid" ]
+  [ -L "$XDG_CONFIG_HOME/opencode/agents/solution-architect.md" ]
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --version v1.1.0
+  [ "$status" -eq 0 ]
+  [ ! -L "$XDG_CONFIG_HOME/opencode/skills/solid" ]
+  [ ! -L "$XDG_CONFIG_HOME/opencode/agents/solution-architect.md" ]
+}
+
+@test "VER-09: version and detached installs do not replace current foreign links" {
+  cd "$TDIR"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --version v1.0.0
+  [ "$status" -eq 0 ]
+  rm "$XDG_CONFIG_HOME/opencode/agents/a.md"
+  ln -s /foreign/a.md "$XDG_CONFIG_HOME/opencode/agents/a.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh"
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$XDG_CONFIG_HOME/opencode/agents/a.md")" = /foreign/a.md ]
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --version v1.1.0
+  [ "$status" -eq 0 ]
+  [ "$(readlink "$XDG_CONFIG_HOME/opencode/agents/a.md")" = /foreign/a.md ]
 }
 
 @test "STALE-01: an older pinned clone warns about the latest release" {

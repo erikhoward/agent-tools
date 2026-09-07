@@ -2,7 +2,7 @@
 #
 # agent-tools install.bats — functional test cases for install.sh
 #
-# Tests:  INST-01 through INST-29
+# Tests:  INST-01 through INST-35
 # Scope:  all tests use isolated mktemp -d fake $HOME with temp XDG_CONFIG_HOME.
 # No test touches the real ~/.config/opencode/.
 #
@@ -193,12 +193,11 @@ teardown() {
 # ── INST-09: --uninstall removes tool symlinks ───────────────────────────
 
 @test "INST-09: --uninstall removes only this tool's symlinks, leaves other files intact" {
-  # first, install some stuff (without --source; uninstall will scan target for our symlinks)
-  run bash "$BATS_TEST_DIRNAME/../install.sh"
+  git -C "$_SOURCE" init -q
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$_SOURCE"
   [ "$status" -eq 0 ]
 
-  # now uninstall (without --source; fallback scans target for agent-tools symlinks)
-  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --source "$_SOURCE"
   [ "$status" -eq 0 ]
 
   # our symlinks should be removed
@@ -224,10 +223,38 @@ teardown() {
   [ -d "$TDIR/source" ]
 }
 
-# ── INST-11: --update (skip - requires local bare repo fixture) ───────────
+# ── INST-11: --update with local bare remote ──────────────────────────────
 
-@test "INST-11: --update pulls and re-links (requires local bare repo fixture)" {
-  skip "INST-11: requires local bare repo fixture — skipped; create a local bare repo and use it as the remote for a full test" ""
+@test "INST-11: --update pulls new assets without replacing a current foreign link" {
+  work="$TDIR/update-work"
+  remote="$TDIR/update-remote"
+  mkdir -p "$work/agents" "$work/commands" "$work/skills/test-skill"
+  git -C "$work" init -q -b main
+  git -C "$work" config user.email test@example.com
+  git -C "$work" config user.name test
+  printf '# test-agent\n' > "$work/agents/test-agent.md"
+  printf '# test-cmd\n' > "$work/commands/test-cmd.md"
+  printf '# test-skill\n' > "$work/skills/test-skill/SKILL.md"
+  printf '# rules\n' > "$work/AGENTS.md"
+  git -C "$work" add .
+  git -C "$work" commit -qm initial
+  git clone -q --bare "$work" "$remote"
+
+  cd "$TDIR"
+  run env AGENT_TOOLS_REPO_URL="file://$remote" bash "$BATS_TEST_DIRNAME/../install.sh"
+  [ "$status" -eq 0 ]
+  rm "$XDG_CONFIG_HOME/opencode/agents/test-agent.md"
+  ln -s /foreign/current-agent.md "$XDG_CONFIG_HOME/opencode/agents/test-agent.md"
+
+  printf '# added\n' > "$work/agents/added.md"
+  git -C "$work" add .
+  git -C "$work" commit -qm update
+  git -C "$work" push -q "$remote" main
+
+  run env AGENT_TOOLS_REPO_URL="file://$remote" bash "$BATS_TEST_DIRNAME/../install.sh" --update
+  [ "$status" -eq 0 ]
+  [ -L "$XDG_CONFIG_HOME/opencode/agents/added.md" ]
+  [ "$(readlink "$XDG_CONFIG_HOME/opencode/agents/test-agent.md")" = /foreign/current-agent.md ]
 }
 
 # ── INST-12: --source <non-repo-dir> fails ───────────────────────────────
@@ -478,4 +505,111 @@ teardown() {
   run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$TDIR/source"
   [ "$status" -eq 0 ]
   [[ "$output" != *"consider gitignoring .opencode"* ]]
+}
+
+@test "INST-30: install removes exact retired links only after the selected source retires them" {
+  mkdir -p "$_SOURCE/skills/solid"
+  printf '# solid\n' > "$_SOURCE/skills/solid/SKILL.md"
+  printf '# solution\n' > "$_SOURCE/agents/solution-architect.md"
+  printf '# devops\n' > "$_SOURCE/agents/devops-engineer.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$_SOURCE"
+  [ "$status" -eq 0 ]
+  [ -L "$XDG_CONFIG_HOME/opencode/skills/solid" ]
+  [ -L "$XDG_CONFIG_HOME/opencode/agents/solution-architect.md" ]
+
+  rm -rf "$_SOURCE/skills/solid"
+  rm "$_SOURCE/agents/solution-architect.md"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$_SOURCE"
+  [ "$status" -eq 0 ]
+  [ ! -L "$XDG_CONFIG_HOME/opencode/skills/solid" ]
+  [ ! -L "$XDG_CONFIG_HOME/opencode/agents/solution-architect.md" ]
+  [ -L "$XDG_CONFIG_HOME/opencode/agents/devops-engineer.md" ]
+}
+
+@test "INST-31: local retired cleanup is dry-run safe and idempotent" {
+  cd "$TDIR"
+  printf '# test engineer\n' > "$_SOURCE/agents/test-engineer.md"
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$_SOURCE"
+  [ "$status" -eq 0 ]
+  rm "$_SOURCE/agents/test-engineer.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$_SOURCE" --dry-run
+  [ "$status" -eq 0 ]
+  [ -L "$TDIR/.opencode/agents/test-engineer.md" ]
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$_SOURCE"
+  [ "$status" -eq 0 ]
+  [ ! -L "$TDIR/.opencode/agents/test-engineer.md" ]
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --local --source "$_SOURCE"
+  [ "$status" -eq 0 ]
+}
+
+@test "INST-32: retired cleanup preserves real paths and foreign links even with --force" {
+  target="$XDG_CONFIG_HOME/opencode"
+  mkdir -p "$target/agents" "$target/commands" "$target/skills/solid"
+  printf 'user solid\n' > "$target/skills/solid/user.txt"
+  printf 'user agent\n' > "$target/agents/test-engineer.md"
+  ln -s /foreign/solution.md "$target/agents/solution-architect.md"
+  ln -s "$_SOURCE-other/agents/devops-engineer.md" "$target/agents/devops-engineer.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$_SOURCE" --force
+  [ "$status" -eq 0 ]
+  [ -f "$target/skills/solid/user.txt" ]
+  [ -f "$target/agents/test-engineer.md" ]
+  [ ! -L "$target/agents/test-engineer.md" ]
+  [ "$(readlink "$target/agents/solution-architect.md")" = /foreign/solution.md ]
+  [ "$(readlink "$target/agents/devops-engineer.md")" = "$_SOURCE-other/agents/devops-engineer.md" ]
+}
+
+@test "INST-33: uninstall checks retired paths absent from a present source" {
+  target="$XDG_CONFIG_HOME/opencode"
+  git -C "$_SOURCE" init -q
+  source_abs="$(cd -P "$_SOURCE" && pwd -P)"
+  mkdir -p "$target/agents" "$target/commands" "$target/skills"
+  ln -s "$source_abs/skills/solid" "$target/skills/solid"
+  ln -s "$source_abs/agents/solution-architect.md" "$target/agents/solution-architect.md"
+  ln -s /foreign/devops.md "$target/agents/devops-engineer.md"
+  printf 'user agent\n' > "$target/agents/test-engineer.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --source "$_SOURCE" --force
+  [ "$status" -eq 0 ]
+  [ ! -L "$target/skills/solid" ]
+  [ ! -L "$target/agents/solution-architect.md" ]
+  [ "$(readlink "$target/agents/devops-engineer.md")" = /foreign/devops.md ]
+  [ -f "$target/agents/test-engineer.md" ]
+}
+
+@test "INST-34: missing-source uninstall uses exact relative ownership and rejects decoys" {
+  target="$XDG_CONFIG_HOME/opencode"
+  missing="$TDIR/missing-agent-tools"
+  missing_abs="$(cd -P "$TDIR" && pwd -P)/missing-agent-tools"
+  mkdir -p "$target/agents" "$target/commands" "$target/skills"
+  ln -s "$missing_abs/agents/test-agent.md" "$target/agents/test-agent.md"
+  ln -s "$missing_abs/skills/solid" "$target/skills/solid"
+  ln -s "$missing_abs-other/agents/solution-architect.md" "$target/agents/solution-architect.md"
+  ln -s /tmp/agent-tools-decoy/commands/test-cmd.md "$target/commands/test-cmd.md"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --source "$missing"
+  [ "$status" -eq 0 ]
+  [ ! -L "$target/agents/test-agent.md" ]
+  [ ! -L "$target/skills/solid" ]
+  [ "$(readlink "$target/agents/solution-architect.md")" = "$missing_abs-other/agents/solution-architect.md" ]
+  [ "$(readlink "$target/commands/test-cmd.md")" = /tmp/agent-tools-decoy/commands/test-cmd.md ]
+}
+
+@test "INST-35: install and uninstall reject symlinked managed child directories" {
+  target="$XDG_CONFIG_HOME/opencode"
+  outside="$TDIR/outside"
+  mkdir -p "$target" "$outside"
+  printf 'sentinel\n' > "$outside/sentinel"
+  ln -s "$outside" "$target/agents"
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --source "$_SOURCE"
+  [ "$status" -ne 0 ]
+  [ ! -e "$outside/test-agent.md" ]
+
+  run bash "$BATS_TEST_DIRNAME/../install.sh" --uninstall --source "$_SOURCE"
+  [ "$status" -ne 0 ]
+  [ -f "$outside/sentinel" ]
 }

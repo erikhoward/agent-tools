@@ -21,12 +21,13 @@ PRs are welcome. This repo ships opencode configuration (agents, commands, skill
 - Skill directory names must match the `name` field in SKILL.md frontmatter.
 - Agent filenames are referenced by commands via the `agent:` field.
 
-## Tier Model for New Agents
+## Agent Boundaries
 
-- **Orchestration**: runs on opencode's built-in `build`/`plan` primary agents, driven by the `flow-*` skills — no custom orchestrator agents.
-- **Tier 2 consultants**: Explicit `model:` field — one reasoning step above the orchestrator for deeper analysis.
-- **Tier 1 analysts**: Inherit `model:` from session / invoker — context-adaptive model inheritance.
-- See AGENTS.md Model Strategy for details.
+- Built-in `build` and `plan` agents orchestrate the flow skills.
+- Built-in `general` implements scoped code, test, and infrastructure tasks.
+- Custom consultants are read-only. Their frontmatter denies editing, shell commands, delegation, and LSP mutations.
+- Add a model override only when an evaluation or operational constraint justifies it.
+- When an asset is retired, update active references, rosters, installer cleanup, tests, and migration documentation in the same change.
 
 ## Validation
 

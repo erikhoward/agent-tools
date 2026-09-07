@@ -1,13 +1,8 @@
 ---
-description: Gather requirements, consult specialist agents in parallel, and create a comprehensive implementation plan
+description: Create and review an implementation plan
 agent: plan
-model: opencode/claude-opus-5
 ---
 
-Feature name: $1
+Feature name or path: $1
 
-Use `flow-plan` skill and plan the task.
-
-After saving the plan file, present the user with the exact plan file path (`.opencode/plans/<feature-name>.md`).
-
-Then tell the user to run `/flow-implement <feature-name>` to start the implementation.
+Load the `flow-plan` skill and follow it. Inspect `$1`, matching concept briefs, and saved plans before asking questions. Report the plan path, approval state, blockers, and next step.
