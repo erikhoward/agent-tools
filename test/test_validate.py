@@ -332,7 +332,7 @@ ROSTER_MD = """\
 
 | Skill | Use for |
 |---|---|
-| `solid` | clean code |
+| `craft` | clean code |
 """
 
 
@@ -340,10 +340,10 @@ class TestRosterConsistency(RepoTestCase):
     """roster_consistency: AGENTS.md tables vs agents/commands/skills trees."""
 
     def write_roster(self, agents_md: str = ROSTER_MD) -> Path:
-        """Write a consistent fixture repo: alpha agent, run command, solid skill."""
+        """Write a consistent fixture repo: alpha agent, run command, craft skill."""
         self.write("agents/alpha.md", "# alpha\n")
         self.write("commands/run.md", "# run\n")
-        self.write("skills/solid/SKILL.md", "# solid\n")
+        self.write("skills/craft/SKILL.md", "# craft\n")
         return self.write("AGENTS.md", agents_md)
 
     def test_consistent_roster_produces_no_findings(self):
@@ -494,6 +494,16 @@ class TestEndToEnd(RepoTestCase):
         self.assertTrue(data["errors"][0]["file"].endswith("agents/bad.md"))
         self.assertIn("description", data["errors"][0]["message"])
 
+    def test_json_output_reports_warnings(self):
+        self.write(
+            "agents/warn.md",
+            "---\ndescription: warns\nmode: primary\nmodel: badmodel\n---\n",
+        )
+        proc = self.run_validator("--json")
+        data = json.loads(proc.stdout)
+        self.assertEqual(data["total_warnings"], 1)
+        self.assertEqual(len(data["warnings"]), 1)
+
     def test_quiet_suppresses_warning_lines_but_not_errors(self):
         # One error (missing description) plus one warning (bad model format).
         self.write(
@@ -509,6 +519,29 @@ class TestEndToEnd(RepoTestCase):
         # Contrast: without --quiet the warning line prints.
         proc = self.run_validator()
         self.assertTrue(any(line.startswith("W  ") for line in proc.stdout.splitlines()))
+
+
+class TestRetiredAssets(RepoTestCase):
+    def test_rejects_retired_shipped_path(self):
+        self.write("agents/solution-architect.md", "retired\n")
+        findings = []
+        validate.validate_retired_assets(self.repo, findings)
+        self.assertTrue(any(item["type"] == "E" for item in findings))
+
+    def test_rejects_active_reference_in_code_fence(self):
+        self.write("skills/work/SKILL.md", "```text\nUse `solid` skill.\n```\n")
+        findings = []
+        validate.validate_retired_assets(self.repo, findings)
+        self.assertTrue(any("solid" in item["message"] for item in findings))
+
+    def test_allows_explicit_legacy_mapping(self):
+        self.write(
+            "skills/flow/SKILL.md",
+            "Legacy mapping: `solution-architect` maps to `principal-architect`.\n",
+        )
+        findings = []
+        validate.validate_retired_assets(self.repo, findings)
+        self.assertEqual(findings, [])
 
 
 if __name__ == "__main__":

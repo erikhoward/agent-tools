@@ -1,34 +1,13 @@
 ---
-description: Commit staged changes, then push — runs both workflows in sequence
+description: Commit the approved staged snapshot, then review and separately approve its push
 agent: build
 subtask: true
 ---
 
-# Commit staged changes, then push them to the remote
+# Commit Then Push
 
-Run two workflows in sequence. Both confirmations are still required — this
-command never skips the gates.
+Run the `/git-commit` workflow first. If nothing is staged, the commit fails, or the user cancels, stop without pushing.
 
-## Phase 1 — Commit
+After a successful commit, run the `/git-push` workflow from a fresh repository-state check. Commit approval does not approve push. Ask for separate push approval.
 
-Follow the `/git-commit` command workflow exactly: check staged changes, scan
-for anomalies, propose a conventional commit message, get confirmation, commit.
-
-If there is nothing to stage or the user cancels, stop — do not push.
-
-## Phase 2 — Push
-
-After a successful commit, follow the `/git-push` command workflow exactly:
-check for unpushed commits, scan them for anomalies, present the push summary,
-get confirmation, handle divergence (with its own rebase confirmation), push.
-
-If the user cancels the push, the commit stays — inform them it is local only
-and can be pushed later with `/git-push`.
-
-## Constraints
-
-- Same constraints as both underlying commands: never `--no-verify` or
-  `--no-gpg-sign`, never stage additional files, never force push unless
-  explicitly asked (and never lightly on main/master).
-- Stop at the first cancelled confirmation. Do not batch or soften the gates
-  because this is a combined command.
+If push is cancelled or blocked, report that the commit remains local. Preserve every constraint from both workflows. Never stage extra files, bypass signing or hooks without explicit authorization, synchronize divergence, or force push by default.

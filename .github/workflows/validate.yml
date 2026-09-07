@@ -23,7 +23,7 @@ jobs:
         run: python3 -m unittest discover -s test -p 'test_*.py'
 
       - name: Run shellcheck on shell scripts
-        run: shellcheck -S style $(git ls-files '*.sh')
+        run: git ls-files -z -- '*.sh' '.githooks/pre-commit' 'skills/git-hooks/examples/modular-pre-commit/pre-commit' | while IFS= read -r -d '' file; do [ ! -f "$file" ] || shellcheck -S style "$file"; done
 
       - name: Install bats-core
         run: sudo apt-get install -y bats

@@ -1,6 +1,6 @@
 # agent-tools
 
-A curated set of opencode [agents](agents/), [commands](commands/), [skills](skills/), and a global [AGENTS.md](AGENTS.md) — the flow workflow (ideate → plan → implement), git helpers, and language/clean-code skills.
+A curated set of opencode [agents](agents/), [commands](commands/), [skills](skills/), and a global [AGENTS.md](AGENTS.md) — the flow workflow (ideate → plan → implement), Git helpers, and language skills.
 
 ![CI](https://github.com/erikhoward/agent-tools/actions/workflows/validate.yml/badge.svg)
 
@@ -15,13 +15,13 @@ See [CHANGELOG.md](CHANGELOG.md) for release history, or the [GitHub Releases](h
 
 ## What's Included
 
-**9 agents**, **6 commands**, **13 skills** — see [AGENTS.md](AGENTS.md) for the full roster and tier model.
+**6 agents**, **6 commands**, **12 skills**. See [AGENTS.md](AGENTS.md) for the roster.
 
 | Type | Count | Purpose |
 |---|---|---|
-| Agents | 9 | Tier 2 consultants and Tier 1 analysts — orchestration runs on opencode's built-in `build`/`plan` agents, driven by the `flow-*` skills |
+| Agents | 6 | Read-only architecture, data, security, code, performance, and UI/UX consultants |
 | Commands | 6 | `/flow-ideate`, `/flow-plan`, `/flow-implement`, `/git-commit`, `/git-push`, `/git-commit-push` |
-| Skills | 13 | Clean code & plain writing (solid, bare-bones), language conventions (go, python, rust, typescript), workflow guides (flow-*), tooling (github, git-hooks, golangci-lint, git-commit) |
+| Skills | 12 | Plain writing, language conventions, workflow guides, and Git/lint tooling |
 
 ## Install (global)
 
@@ -69,7 +69,7 @@ The script symlinks agents, commands, and skills into `<git-root>/.opencode/{age
 
 Then **restart opencode** so the new config loads.
 
-AGENTS.md is **not** installed locally. The project's own `AGENTS.md` takes precedence, and `.opencode/AGENTS.md` is not an opencode rules location. A global install provides the default for projects without their own `AGENTS.md`.
+AGENTS.md is **not** installed locally. `.opencode/AGENTS.md` is not an opencode rules location. Existing project and global rule files continue to apply.
 
 In local mode, `--force` never overwrites real files. It replaces symlinks only and warns on real files.
 
@@ -90,6 +90,15 @@ bash ~/.local/share/agent-tools/install.sh --update --local   # git pull + re-li
 ```
 
 Installs warn when the clone is behind the latest release. Pinned installs move by re-running with a newer `--version`.
+
+Updates can retire assets. Run the installer after updating the checkout. A plain `git pull` does not remove retired links:
+
+```sh
+git pull --ff-only
+./install.sh
+```
+
+Run the local installer once in each project that has a local installation. The cleanup removes only links that exactly target retired paths in the selected checkout. It preserves real files, directories, and foreign links. Restart opencode after migration.
 
 ## Local Development
 
@@ -116,9 +125,7 @@ bats test/
 ### Update
 
 ```sh
-./install.sh --update        # git pull + re-link (picks up new files)
-# or just:
-cd ~/.local/share/agent-tools && git pull   # symlinks follow automatically
+./install.sh --update        # git pull + re-link + retire owned links
 ```
 
 ### Uninstall
@@ -146,7 +153,7 @@ Use [WSL](https://opencode.ai/docs/windows-wsl) — opencode's own recommended p
 
 ## Why a symlink script, not a marketplace
 
-Community marketplaces (e.g. `opencode-marketplace`) namespace files on install (`go/SKILL.md` → `agent-tools--go/SKILL.md`), which breaks skill directory structure and cross-references. Symlinking preserves the exact layout (including `references/` directories) and lets you update with a plain `git pull`.
+Community marketplaces (e.g. `opencode-marketplace`) namespace files on install (`go/SKILL.md` → `agent-tools--go/SKILL.md`), which breaks skill directory structure and cross-references. Symlinking preserves the exact layout, including `references/` directories.
 
 ## Notes
 

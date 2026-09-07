@@ -1,352 +1,67 @@
 ---
 name: flow-implement
-description: This skill should be used when the user asks to "implement a flow plan", "execute the flow workflow", "run parallel agent implementation", "build from an opencode plan", or needs to execute a written plan from .opencode/plans/ using parallel engineering agents with quality gates.
+description: Execute an approved plan with bounded built-in general workers, explicit ownership, checkpoints, and behavior verification.
 license: MIT
 compatibility: opencode
 ---
 
-# Flow — Implement
+# Flow Implement
 
-A structured implementation workflow that executes a written plan from
-`.opencode/plans/` using parallel engineering agents, followed by quality gates
-and testing. Nothing is declared done until all tests pass.
+Execute an explicitly approved plan from `.opencode/plans/`. The build agent orchestrates. Built-in `general` workers implement. Consultants remain read-only.
 
-**Orchestrator**: `build` agent — this workflow is always started and driven by
-the `build` agent. The build agent reads the plan, decomposes work, delegates
-to coders, escalates to consultants when blocked, and closes the workflow.
+## Preflight
 
-**Prerequisite**: A plan file must exist in `.opencode/plans/`. Read it
-carefully and thoroughly before doing anything else. Every decision must trace
-back to the plan. Do not improvise, skip, or reinterpret scope.
+Use `$1` to inspect `.opencode/plans/$1.md` before asking questions. If `$1` is a path, read that path. If absent, locate a clear matching plan from the request. Do not guess between plans.
 
----
+Read the full plan and its checkpoint. A saved plan is not approved. Stop if approval is absent, blockers remain, acceptance criteria are unclear, or required ownership overlaps. Ask the user about intent or authorization. Do not ask questions already answered by the plan or current repository evidence.
 
-## Design Philosophy
+For an old plan, show this mapping and get confirmation before execution:
 
-The workflow is judged by the quality of the code it produces, not just by
-conformance to the plan. Every task prompt, verification, and review applies
-the Four Elements of Simple Design, in priority order:
+- `solution-architect` consultation maps to `principal-architect`.
+- `devops-engineer` planning maps to a retained read-only analyst with an infrastructure assignment.
+- `test-engineer` planning maps to a retained read-only analyst with a testing assignment.
+- `devops-engineer` implementation maps to built-in `general` with infrastructure-only ownership.
+- `test-engineer` implementation maps to built-in `general` with test-only ownership and no production-code changes.
 
-1. **Runs all the tests** — it works
-2. **Expresses intent** — readable, reveals purpose
-3. **No duplication** — after the Rule of Three, not before
-4. **Minimal** — fewest abstractions that satisfy the requirement
+Unknown names, including `developer-prime` and `developer-fast`, or tasks that edit retired files require plan revision. Do not rewrite the plan or create aliases automatically. Preserve task IDs, acceptance criteria, and completion state.
 
-YAGNI over speculative generality; the simplest solution that works over the
-clever one. The `solid` skill holds the full principles (SOLID, code smells,
-clean code); coder agents load it via the task prompt's `Style:` line.
+## Prepare Batches
 
----
+Reconcile plan tasks with current files and prior evidence. Reuse valid exploration. Create bounded batches of independent tasks. Tasks in one batch must have non-overlapping allowed files. Give every file one writer.
 
-## Step 1 — Start as the Build Agent
+The host permits one Todo item in `in_progress`. Represent the active orchestration batch as that item. Record child task IDs, worker task IDs, ownership, and evidence inside it. Complete or checkpoint the batch before another batch starts.
 
-This workflow is owned by the `build` agent from start to finish. The build
-agent does not write code — it orchestrates. Its responsibilities are:
+Use the built-in `general` worker for implementation. Every fresh-worker prompt must contain:
 
-- Read and deeply understand the plan in `.opencode/plans/`
-- Decompose the plan into atomic implementation tasks
-- Delegate tasks to the built-in `general` subagent
-- Escalate to consultants the moment anything is unclear, blocked, or risky
-- Verify quality gates and ensure all tests pass before closing
-
-**Do not skip this agent assignment.** The build agent is the single point of
-accountability for the entire workflow.
-
----
-
-## Step 2 — Read the Plan Carefully and Thoroughly
-
-Locate the plan file in `.opencode/plans/`. Read it in full before taking any
-action. Pay close attention to:
-
-- Goals and scope
-- Architecture and design decisions
-- Implementation tasks and their dependencies
-- Security, performance, and database considerations
-- Testing strategy and acceptance criteria
-
-**Follow every instruction in the plan thoroughly.** The plan is the source of
-truth. If the plan says to do something a specific way, do it that way exactly.
-Do not improvise. If something in the plan is ambiguous, escalate to the
-appropriate consultant before proceeding (see Step 4).
-
----
-
-## Step 3 — Decompose and Track All Tasks
-
-Break every implementation item in the plan into atomic, actionable tasks.
-Register all tasks in TodoWrite immediately. Rules:
-
-- Mark a task `in_progress` the moment work begins on it
-- Mark a task `completed` the moment it is verifiably done — do not batch
-- Only one task should be `in_progress` at a time
-- Never declare a task complete without evidence (tests pass, code reviewed)
-
----
-
-## Step 4 — Delegate to Coders
-
-Assign implementation tasks to the appropriate coder agent and run independent
-tasks in parallel:
-
-### Assign implementation tasks to the built-in `general` subagent
-
-| Task type | Assigned agent |
-|---|---|
-| Any implementation task | `general` (built-in opencode subagent) |
-
-Run all independent tasks simultaneously. Never serialise work that can be
-parallelised.
-
-### Dispatch Sizing — Hard Rule
-
-Never bundle a whole plan or a large step range into one task dispatch.
-
-- Cap every dispatch at **2-3 plan steps** (or one scoped change)
-- Split larger plans across multiple dispatches; run independent dispatches
-  in parallel
-- If the coder must hold the whole spec in mind before writing the first
-  line, the dispatch is too big — split it
-
-Oversized dispatches invite long planning spells with no tool calls and can
-end with no usable output. Small dispatches force incremental work: read a
-little, change a little, verify.
-
-### Pass Style Context in the Task Prompt
-
-Before dispatching each task, check whether the repo has skills matching the
-task: the technology (e.g. `go`, `golangci-lint`) and design quality (`solid`).
-Skills load into the session that loads them — a subagent does **not** inherit
-skills loaded by the build agent. The task prompt itself must therefore
-instruct the coder agent to load the skill:
-
-```
-Style: load the `go` and `solid` skills before writing code. Follow the go
-skill's verification section (gofmt, go vet, go build) and the solid skill's
-design checks before declaring this task complete.
+```text
+Role: <implementation role>
+Task: <plan task IDs and exact outcome>
+Allowed files: <exclusive paths; no other writes>
+Requirements: <behavior, interfaces, constraints, acceptance criteria>
+Method: make the smallest correct change; avoid unrelated refactors and speculative abstractions.
+Tests: write a failing behavior test first unless the approved plan sets another order.
+Verification: <focused tests and relevant static checks; return command results and behavior evidence>
+Stop: stop on unclear intent, ownership conflict, out-of-scope need, risky unplanned decision, or failed required check.
 ```
 
-If no matching technology skill exists, still pass the `solid` skill — its
-principles apply to any codebase.
+Children do not inherit loaded skills or repository instructions. Put all critical constraints in the prompt. Add focused technology guidance only when needed. Do not require generic skill loads.
 
-### Task Prompt Template
+## Execute And Verify
 
-Give every coder agent a fully-formed prompt — never a vague description:
+Dispatch one bounded batch at a time. Parallelize only non-overlapping tasks. Each worker returns changed files, test evidence, failures, deviations, and unresolved concerns.
 
-```
-Task: <specific action from the plan>
+Check worker evidence before integration. Run focused missing checks, then relevant integration checks. Do not repeat an identical check without a reason. Verify observable behavior, acceptance criteria, minimal scope, and the final diff. Do not mark a task complete from a worker claim alone.
 
-Context: <relevant background and any consultation outputs>
+If one branch fails, record the failure and continue independent work that is safe. Bound local diagnosis. Consult a relevant specialist for material security, data, performance, or architecture risk, or for an unresolved technical problem. Principal architecture handles all architecture questions. Consultants advise and review without edits, shell commands, or delegation.
 
-Requirements:
-  - <requirement 1>
-  - <requirement 2>
+Never report final success while a required check, blocker, or worker failure remains unresolved. Do not hide unavailable checks.
 
-Files to modify:
-  - <path>
+## Checkpoint And Resume
 
-Files to create:
-  - <path>
+After each batch, persist task IDs, worker task IDs, ownership, changed files, evidence, completion state, blockers, and next action in the plan checkpoint. On resume, inspect current files and reconcile prior results before dispatch. Do not rerun completed work blindly.
 
-Architectural guidance: <from principal-architect or solution-architect if consulted>
-Security requirements: <from security-expert if consulted>
-Database guidance: <from database-architect if consulted>
-Style: <skills for the coder agent to load — e.g. `go`, `solid` — with their verification steps>
+## Finish
 
-Design principles:
-  - Single responsibility: each new/changed module or function does one thing
-  - Depend on abstractions, not concretions, at module boundaries
-  - No speculative generality — build what the task requires, nothing more
-  - Simplest solution that satisfies the requirements
+Run the plan's integration checks and inspect version-control status and diff. Confirm that only intended files changed. Preserve concurrent changes. Do not commit, push, install, deploy, or change configuration without explicit authorization.
 
-Test-first (when the plan's testing strategy permits): write the failing test
-for the task's behavior before the implementation (red-green-refactor, per
-the `solid` skill). If the plan sequences tests after implementation, follow
-the plan — but never skip verification.
-
-Success criteria:
-  - <how to verify this task is done>
-  - <tests that must pass>
-```
-
-### Per-Task Verification
-
-After each coder agent completes a task, verify before marking it done:
-
-1. Run the relevant tests (`npm test` / `pytest` / `go test ./...`)
-2. Check type errors (`tsc --noEmit` / `mypy` / `go vet`)
-3. Run linter / formatter
-4. **Design check**: new/changed functions do one thing; no god files or
-   functions; no duplication beyond the Rule of Three; no dead code
-5. Confirm expected behaviour
-6. Mark the todo `completed` **immediately** — do not batch
-
-Never advance to the next task while the current one has a failing check.
-
----
-
-## Step 5 — Consult Immediately When Blocked or Uncertain
-
-If anything goes wrong, gets stuck, requires a decision not covered by the
-plan, or carries architectural/security/data risk — **stop and consult before
-continuing**. Do not guess. Do not proceed on assumptions.
-
-Escalate to the relevant consultant(s) immediately and in parallel if multiple
-perspectives are needed:
-
-| Situation | Consult |
-|---|---|
-| Architecture or system design question | `principal-architect` |
-| Service design or cross-component decision | `solution-architect` |
-| Data model, schema, or query concern | `database-architect` |
-| Security, auth, or threat modelling concern | `security-expert` |
-
-Consultants operate in **Think → Advise → Review** mode: they analyse the
-situation, give a concrete recommendation, and review the outcome. Their
-guidance must be incorporated before work continues.
-
-**Consultation is not optional when blocked.** It is a required part of the
-workflow.
-
----
-
-## Step 6 — Quality Gates
-
-After all coding tasks complete, run the following reviews **in parallel**
-before declaring the implementation done:
-
-- `security-expert` — verify all security mitigations from the plan are correctly implemented
-- `principal-architect` — verify the implementation matches the agreed design **and conforms to SOLID**: single responsibilities honored, dependencies point at abstractions, no code smells (god classes, shotgun surgery, primitive obsession) — a plan followed perfectly can still produce a design mess
-- `solution-architect` — verify service boundaries and interfaces are correct
-- `database-architect` — verify schema, migrations, and queries are sound
-
-Address every finding before moving to testing.
-
----
-
-## Step 7 — Testing and Validation
-
-Run the project's full test suite. If tests are missing for new code, delegate
-to the built-in `@general` subagent to add them per the testing strategy defined in the plan.
-All tests must pass before the workflow closes. No exceptions.
-
----
-
-## Step 8 — Documentation and Git Review
-
-Before presenting the final summary, do a clean-up pass:
-
-1. **Update code documentation** — add JSDoc / docstrings to all new public
-   APIs; add inline comments for non-obvious logic.
-2. **Update README** if the feature requires new setup steps, environment
-   variables, or changed behaviour.
-3. **Update `.env.example`** for any new environment variables introduced.
-4. **Remove all debug artefacts** — no `console.log`, no commented-out code,
-   no temporary files.
-5. **Run `git status` and `git diff --stat`** to confirm only intended files
-   changed and no unintended modifications are included.
-
----
-
-## Step 9 — Final Summary
-
-Present a concise summary covering:
-
-- What was built
-- Which agents contributed
-- Tasks completed (count)
-- Files changed (count, added vs modified)
-- Test results (passing / total, coverage if available)
-- Any deviations from the original plan and their justifications
-- Warnings or post-deployment considerations (migrations, env vars, etc.)
-- Suggested next steps (review `git diff`, commit, open PR, deploy)
-
----
-
-## Key Rules
-
-- **Build agent owns the workflow.** The workflow starts and ends with the build agent.
-- **Read the plan carefully and thoroughly.** Every action must trace to the plan.
-- **Follow instructions thoroughly.** Do exactly what the plan specifies. Do not reinterpret or skip steps.
-- **Quality means design, not just conformance.** Apply the Four Elements of Simple Design; pass the `solid` skill to every coder.
-- **Pass style context in the task prompt.** Skills don't cross agent boundaries — tell each coder agent which skills to load.
-- **Use the task prompt template.** Never delegate with a vague description — include task, context, files, consultation outputs, and success criteria.
-- **Verify each task before moving on.** Run tests, type-check, and lint after every task. Do not accumulate failures.
-- **Delegate to the built-in `general` subagent.** It is the coder in this workflow — dispatch sizing and per-task verification control complexity, not agent choice.
-- **Cap dispatch size.** Never bundle more than 2-3 plan steps into a single task dispatch. Split large plans across multiple dispatches.
-- **Consult immediately when blocked.** principal-architect, solution-architect, database-architect, and security-expert are on call for Think → Advise → Review.
-- **Parallel by default.** Never run independent tasks or consultations sequentially.
-- **Track every task.** Use TodoWrite throughout. No task is done until marked completed.
-- **Quality gates are mandatory.** Do not skip the parallel review step before testing.
-- **All tests must pass.** Do not close the workflow with failing tests.
-- **Clean up before closing.** Update docs, remove debug code, verify git status before the final summary.
-
----
-
-## Agent Roster
-
-### Orchestrator
-
-| Agent | Role |
-|---|---|
-| `build` | Workflow owner — reads plan, delegates, escalates, closes |
-
-### Implementers (write code)
-
-| Agent | Specialty |
-|---|---|
-| `general` | Built-in opencode subagent — all implementation tasks |
-
-### Consultants (Think → Advise → Review — read-only, no code changes)
-
-| Agent | Specialty |
-|---|---|
-| `principal-architect` | High-level system strategy, cross-service architecture, technical governance |
-| `solution-architect` | Concrete service designs, cross-component interfaces |
-| `database-architect` | Data modelling, schema, query optimisation, migrations |
-| `security-expert` | Threat modelling, cryptography, auth, secure coding |
-
----
-
-## Workflow at a Glance
-
-```
-Build agent starts
-    │
-    ▼
-Read plan from .opencode/plans/<name>.md (carefully and thoroughly)
-    │
-    ▼
-Decompose into atomic tasks (TodoWrite)
-    │
-    ▼
-For each task:
-    Check repo skills → include "load <skill>" in task prompt → delegate
-    ├── @general         (built-in subagent, parallel dispatches)
-    │
-    ▼ (after each task)
-Per-task verification: tests → type-check → lint → mark completed
-    │
-    ▼ (if blocked or uncertain at any point)
-Consult immediately (in parallel as needed)
-    ├── principal-architect  → Think, Advise, Review
-    ├── solution-architect   → Think, Advise, Review
-    ├── database-architect   → Think, Advise, Review
-    └── security-expert      → Think, Advise, Review
-    │
-    ▼
-Parallel quality gates
-    ├── security-expert
-    ├── principal-architect
-    ├── solution-architect
-    └── database-architect
-    │
-    ▼
-Testing and validation (all tests must pass)
-    │
-    ▼
-Documentation update + git status review
-    │
-    ▼
-Final summary (tasks, files, tests, deviations, next steps)
-```
+Report completed and blocked task IDs, changed files, behavior and check results, deviations, unresolved concerns, and the next action. Success requires all acceptance criteria and required checks to pass.

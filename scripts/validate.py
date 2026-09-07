@@ -15,6 +15,13 @@ Finding = dict[str, str | int]
 # Built-in opencode agents — valid references without agents/<name>.md
 BUILTIN_AGENTS = {"build", "plan", "general", "explore", "scout"}
 
+RETIRED_ASSETS = {
+    "skills/solid": re.compile(r"`solid`\s+skill\b", re.IGNORECASE),
+    "agents/solution-architect.md": re.compile(r"(?:@|`)solution-architect`?\b"),
+    "agents/devops-engineer.md": re.compile(r"(?:@|`)devops-engineer`?\b"),
+    "agents/test-engineer.md": re.compile(r"(?:@|`)test-engineer`?\b"),
+}
+
 
 def parse_frontmatter(fm_text: str) -> dict:
     """Parse YAML frontmatter using only re and string operations.
@@ -548,6 +555,47 @@ def cross_reference(repo: Path, findings: list[Finding]) -> None:
                     _add_finding(findings, "W", md_file, line_num, message)
 
 
+def validate_retired_assets(repo: Path, findings: list[Finding]) -> None:
+    """Reject retired shipped assets and active references to them."""
+    for relative_path in RETIRED_ASSETS:
+        path = repo / relative_path
+        if path.exists() or path.is_symlink():
+            _add_finding(
+                findings,
+                "E",
+                path,
+                1,
+                f"Retired asset `{relative_path}` must not be shipped",
+            )
+
+    active_files = [repo / "AGENTS.md"]
+    for directory in ("agents", "commands", "skills"):
+        root = repo / directory
+        if root.exists():
+            active_files.extend(root.rglob("*.md"))
+
+    for path in active_files:
+        if not path.is_file():
+            continue
+        try:
+            lines = path.read_text().splitlines()
+        except OSError:
+            continue
+        for line_number, line in enumerate(lines, start=1):
+            lowered = line.lower()
+            if "maps to" in lowered or "legacy mapping" in lowered:
+                continue
+            for relative_path, pattern in RETIRED_ASSETS.items():
+                if pattern.search(line):
+                    _add_finding(
+                        findings,
+                        "E",
+                        path,
+                        line_number,
+                        f"Active reference to retired asset `{relative_path}`",
+                    )
+
+
 def roster_consistency(repo: Path, findings: list[Finding]) -> None:
     """Parse AGENTS.md and verify table consistency."""
     agents_md = repo / "AGENTS.md"
@@ -760,18 +808,26 @@ def _format_text(findings: list[Finding], quiet: bool) -> str:
 
 def _format_json(findings: list[Finding]) -> str:
     """Format findings as JSON output."""
-    error_list = []
-    for f in findings:
-        if f["type"] == "E":
-            error_list.append({
+    def select(kind: str) -> list[dict[str, str | int]]:
+        selected = []
+        for f in findings:
+            if f["type"] != kind:
+                continue
+            selected.append({
                 "file": f["file"],
                 "line": f["line"],
                 "message": f["message"],
             })
+        return selected
+
+    error_list = select("E")
+    warning_list = select("W")
 
     return json.dumps({
         "errors": error_list,
+        "warnings": warning_list,
         "total_errors": len(error_list),
+        "total_warnings": len(warning_list),
     }, indent=2) + "\n"
 
 
@@ -815,7 +871,10 @@ def main() -> int:
     # 6. Model allowlist
     model_allowlist(repo, findings)
 
-    # 7. Output
+    # 7. Retired assets and references
+    validate_retired_assets(repo, findings)
+
+    # 8. Output
     if args.json:
         print(_format_json(findings))
     else:

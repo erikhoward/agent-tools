@@ -1,10 +1,8 @@
 ---
-description: Execute an implementation plan with parallel engineering agents, quality gates, and mandatory testing
+description: Execute an explicitly approved implementation plan
 agent: build
 ---
 
-Feature name: $1
+Plan name or path: $1
 
-Use the `flow-implement` skill and implement the provided plan properly
-
-If no plan is presented in the context or the prompt, ask the user to provide a proper detailed plan or ask to use the `/flow-plan` command and plan properly
+Load the `flow-implement` skill and follow it. Inspect `$1` before asking questions. Stop if the plan lacks explicit approval or has unresolved blockers. Report task, file, and verification evidence.

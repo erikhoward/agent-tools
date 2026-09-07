@@ -41,6 +41,14 @@ CNT_LINKED=0
 CNT_SKIPPED=0
 CNT_WARNED=0
 
+retired_paths() {
+  printf '%s\n' \
+    'skills/solid' \
+    'agents/solution-architect.md' \
+    'agents/devops-engineer.md' \
+    'agents/test-engineer.md'
+}
+
 die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
 usage() {
@@ -129,7 +137,7 @@ is_repo() {
 
 # --- dry-run-aware primitives ---
 do_mkdir() { if [ "$DRY_RUN" -eq 1 ]; then printf '  mkdir -p %s\n' "$1"; else mkdir -p "$1" || die "mkdir failed: $1"; fi; }
-do_rm()    { printf '  rm -f %s\n' "$1"; if [ "$DRY_RUN" -ne 1 ]; then rm -f "$1"; fi; }
+do_rm()    { printf '  rm -f %s\n' "$1"; if [ "$DRY_RUN" -ne 1 ]; then rm -f "$1" || die "remove failed: $1"; fi; }
 do_ln()    { if [ "$DRY_RUN" -eq 1 ]; then printf '  link: %s -> %s\n' "$2" "$1"; else ln -s "$1" "$2" || die "symlink failed: $2"; fi; }
 do_git()   { if [ "$DRY_RUN" -eq 1 ]; then printf '  git %s\n' "$*"; else git "$@" || die "git $1 failed"; fi; }
 
@@ -227,16 +235,37 @@ remove_link() {
   fi
 }
 
-install_all() {
-  if [ "$LOCAL" -eq 1 ]; then
-    # M3: refuse to install into symlinked target dirs — only real dirs
-    local p
-    for p in "$PROJECT_ROOT/.opencode" "$PROJECT_ROOT/.opencode/agents" \
-             "$PROJECT_ROOT/.opencode/commands" "$PROJECT_ROOT/.opencode/skills"; do
-      [ -L "$p" ] || continue
-      die "refusing: $p is a symlink (expected a real directory)"
-    done
+guard_target_dirs() {
+  local p
+  if [ "$LOCAL" -eq 1 ] && [ -L "$TARGET_DIR" ]; then
+    die "refusing: $TARGET_DIR is a symlink (expected a real directory)"
   fi
+  for p in "$TARGET_DIR/agents" "$TARGET_DIR/commands" "$TARGET_DIR/skills"; do
+    [ ! -L "$p" ] || die "refusing: $p is a symlink (expected a real directory)"
+  done
+}
+
+remove_retired_links() {
+  local rel src
+  while IFS= read -r rel; do
+    src="$SOURCE_DIR/$rel"
+    remove_link "$TARGET_DIR/$rel" "$src"
+  done < <(retired_paths)
+}
+
+cleanup_retired_links() {
+  local rel src
+  while IFS= read -r rel; do
+    src="$SOURCE_DIR/$rel"
+    if [ -e "$src" ] || [ -L "$src" ]; then
+      continue
+    fi
+    remove_link "$TARGET_DIR/$rel" "$src"
+  done < <(retired_paths)
+}
+
+install_all() {
+  guard_target_dirs
 
   do_mkdir "$TARGET_DIR/agents"
   do_mkdir "$TARGET_DIR/commands"
@@ -251,13 +280,15 @@ install_all() {
     name="$(basename "$f")"; install_link "${f%/}" "$TARGET_DIR/skills/$name"; done
 
   if [ "$LOCAL" -eq 1 ]; then
-    printf 'note: AGENTS.md not installed locally — project AGENTS.md takes precedence; global install provides the default\n' >&2
+    printf 'note: AGENTS.md not installed locally; existing project and global rules continue to apply\n' >&2
   else
     install_link "$SOURCE_DIR/AGENTS.md" "$TARGET_DIR/AGENTS.md"
   fi
+  cleanup_retired_links
 }
 
 uninstall_all() {
+  guard_target_dirs
   # Fallback: if source dir is missing, scan target for our symlinks
   # (global mode only — local uninstall fails closed in resolve_source, M4)
   if [ "$LOCAL" -ne 1 ] && [ ! -d "$SOURCE_DIR" ]; then
@@ -265,27 +296,23 @@ uninstall_all() {
     for f in "$TARGET_DIR"/agents/*.md; do
       [ -e "$f" ] || [ -L "$f" ] || continue
       dst="$f"
-      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
-        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
-      fi
+      name="$(basename "$f")"
+      remove_link "$dst" "$SOURCE_DIR/agents/$name"
     done
     for f in "$TARGET_DIR"/commands/*.md; do
       [ -e "$f" ] || [ -L "$f" ] || continue
       dst="$f"
-      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
-        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
-      fi
+      name="$(basename "$f")"
+      remove_link "$dst" "$SOURCE_DIR/commands/$name"
     done
-    for d in "$TARGET_DIR"/skills/*/; do
+    for d in "$TARGET_DIR"/skills/*; do
       [ -e "$d" ] || [ -L "$d" ] || continue
       dst="$d"
-      if [ -L "$dst" ] && readlink "$dst" | grep -q "agent-tools"; then
-        do_rm "$dst"; CNT_LINKED=$((CNT_LINKED + 1))
-      fi
+      name="$(basename "$d")"
+      remove_link "$dst" "$SOURCE_DIR/skills/$name"
     done
-    if [ -L "$TARGET_DIR/AGENTS.md" ] && readlink "$TARGET_DIR/AGENTS.md" | grep -q "agent-tools"; then
-      do_rm "$TARGET_DIR/AGENTS.md"; CNT_LINKED=$((CNT_LINKED + 1))
-    fi
+    remove_link "$TARGET_DIR/AGENTS.md" "$SOURCE_DIR/AGENTS.md"
+    remove_retired_links
     return
   fi
   local f name
@@ -298,6 +325,7 @@ uninstall_all() {
   if [ "$LOCAL" -ne 1 ]; then
     remove_link "$TARGET_DIR/AGENTS.md" "$SOURCE_DIR/AGENTS.md"
   fi
+  remove_retired_links
 }
 
 summary() {
@@ -384,13 +412,6 @@ if [ "$UPDATE" -eq 1 ]; then
     printf 'Updating clone...\n'
     do_git -C "$SOURCE_DIR" pull --ff-only
   fi
-  FORCE=1
-fi
-
-if [ -n "$VERSION" ]; then
-  FORCE=1
-elif is_detached; then
-  FORCE=1
 fi
 
 check_stale
